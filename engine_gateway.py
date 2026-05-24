@@ -1,0 +1,58 @@
+from analytics.impact_metrics import calculate_simulated_rapm, parse_epm, calculate_net_impact_per_100
+from analytics.age_curves import get_age_multiplier
+from analytics.injury_risk import get_injury_discount_factor
+from analytics.scarcity_curves import get_archetype_multiplier
+from cba.salary_caps import calculate_max_salary
+from cba.apron_matrix import check_apron_status
+from cba.asset_efficiency import compute_contract_efficiency
+from transactions.matcher import get_max_incoming_salary
+from transactions.restrictions import validate_salary_aggregation, TradeRestrictionError
+from transactions.equity_balancer import EquityBalancer
+
+class Player:
+    def __init__(self, name: str, age: int, archetype: str, games_played_last_3: list[int],
+                 box_plus_minus: float, on_off: float, epm: float, cap_hit: float):
+        self.name = name
+        self.age = age
+        self.archetype = archetype
+        self.games_played_last_3 = games_played_last_3
+        self.box_plus_minus = box_plus_minus
+        self.on_off = on_off
+        self.epm = epm
+        self.cap_hit = cap_hit
+
+def evaluate_player(player: Player) -> float:
+    rapm = calculate_simulated_rapm(player.box_plus_minus, player.on_off)
+    parsed_epm = parse_epm(player.epm)
+    net_impact = calculate_net_impact_per_100(rapm, parsed_epm)
+    
+    age_mult = get_age_multiplier(player.age)
+    injury_discount = get_injury_discount_factor(player.games_played_last_3)
+    archetype_mult = get_archetype_multiplier(player.archetype)
+    
+    # Simple modeled value scaling: 1 point of net impact = $5M
+    base_value = net_impact * 5_000_000
+    
+    final_value = base_value * age_mult * injury_discount * archetype_mult
+    return final_value
+
+def evaluate_trade(team_a_apron: str, team_a_sending: list[Player], team_b_sending: list[Player]) -> bool:
+    """
+    Evaluates if Team A can legally make this trade with Team B under S-TPE and Apron rules.
+    """
+    try:
+        validate_salary_aggregation(team_a_apron, len(team_a_sending))
+    except TradeRestrictionError as e:
+        print(f"Trade blocked: {e}")
+        return False
+        
+    team_a_outgoing_salary = sum(p.cap_hit for p in team_a_sending)
+    team_a_incoming_salary = sum(p.cap_hit for p in team_b_sending)
+    
+    max_incoming = get_max_incoming_salary(team_a_outgoing_salary)
+    
+    if team_a_incoming_salary > max_incoming:
+        print(f"Trade blocked: Incoming salary {team_a_incoming_salary} exceeds max {max_incoming}")
+        return False
+        
+    return True
