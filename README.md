@@ -1,0 +1,113 @@
+# HoopMetrics CBA Core
+
+HoopMetrics CBA Core is a pure-Python modeling library for NBA player valuation and trade
+legality under the league's Collective Bargaining Agreement (CBA) rules. It combines a
+simulated on-court impact/analytics model with a rules engine for salary caps, tax aprons,
+and trade-matching restrictions, then exposes both through a single gateway module so a
+proposed trade can be evaluated end-to-end: "is this trade good value, and is it even legal?"
+
+There is no external framework, database, or API server here — it's a collection of
+composable calculation modules plus a small integration layer (`engine_gateway.py`) and a
+pytest suite that exercises them individually and together.
+
+## Architecture
+
+The codebase is organized into three domains plus a gateway that ties them together:
+
+### `analytics/` — player valuation model
+
+- **`impact_metrics.py`** — Computes a simulated Regularized Adjusted Plus-Minus (RAPM) from
+  box plus-minus and on/off ratings, parses Estimated Plus-Minus (EPM), and combines the two
+  into a net impact-per-100-possessions figure.
+- **`age_curves.py`** — Applies a non-linear age-based performance multiplier: an upside
+  premium under 19, an exponential growth-projection curve for ages 19-23, a flat peak
+  baseline for 24-29, and a quadratic decay penalty (floored at 0.1x) for 30+.
+- **`injury_risk.py`** — Tracks a player's "Available Games Ratio" over a rolling 3-season
+  window (games played out of 246 possible) and applies a multiplicative discount once
+  missed games exceed 25%, floored at 0.5x.
+- **`scarcity_curves.py`** — Maps discrete player archetypes (e.g. "Two-Way Wing",
+  "Floor-Spacing Rim Protector", "High-Volume Playmaker", "Traditional Low-Volume Big") to a
+  scarcity premium/discount multiplier, defaulting to 1.0x for unrecognized archetypes.
+
+### `cba/` — salary cap and tax rules
+
+- **`salary_caps.py`** — Derives a player's maximum allowable salary bracket from cap space,
+  years of service, and All-NBA/"Rose Rule" eligibility (25%/30%/35% of the cap tiers).
+- **`apron_matrix.py`** — Classifies a team's payroll against the First and Second Apron
+  thresholds, returning `"Below Apron"`, `"First Apron"`, or `"Second Apron"`.
+- **`asset_efficiency.py`** — Computes a "Contract Efficiency Index" as the dollar delta
+  between a player's modeled value and their actual cap hit.
+
+### `transactions/` — trade legality engine
+
+- **`matcher.py`** — Implements Simultaneous Trade Exception (S-TPE) salary-matching
+  brackets, returning the maximum incoming salary a team may take back for a given
+  outgoing salary.
+- **`restrictions.py`** — Enforces First/Second Apron salary-aggregation restrictions,
+  raising a `TradeRestrictionError` if an apron team tries to combine more than one outgoing
+  player's salary in a single trade.
+- **`equity_balancer.py`** — Tracks non-salary trade assets sent by a team (draft picks,
+  pick swaps, cash) and enforces the league cash-in-trade limit (currently modeled at
+  $7,960,000).
+
+### `engine_gateway.py` — integration layer
+
+Defines the `Player` dataclass-like model and two top-level entry points:
+
+- **`evaluate_player(player)`** — Runs a player through the full analytics pipeline (RAPM +
+  EPM -> net impact -> dollar value scaling at $5M per point of net impact -> age, injury,
+  and archetype multipliers) to produce a single modeled dollar value.
+- **`evaluate_trade(team_a_apron, team_a_sending, team_b_sending)`** — Validates a proposed
+  trade against apron aggregation rules and S-TPE salary-matching limits, returning `True`
+  if the trade is legal and `False` (with a printed reason) if it is blocked.
+
+## Tech stack
+
+- Python 3 (uses `list[int]`-style built-in generics, so Python 3.9+)
+- [pytest](https://docs.pytest.org/) for the test suite
+- No third-party runtime dependencies, no `requirements.txt`/`pyproject.toml` — the project
+  currently has no packaging manifest, so dependencies (just `pytest`) must be installed
+  manually
+
+## Setup
+
+```bash
+git clone https://github.com/thompgt/hoopmetrics-cba-core.git
+cd hoopmetrics-cba-core
+pip install pytest
+```
+
+## Usage
+
+Import the gateway module and drive it directly, e.g.:
+
+```python
+from engine_gateway import Player, evaluate_player, evaluate_trade
+
+young_wing = Player(
+    name="Young Star", age=21, archetype="Two-Way Wing",
+    games_played_last_3=[82, 82, 82],
+    box_plus_minus=3.0, on_off=4.0, epm=3.5, cap_hit=8_000_000,
+)
+print(evaluate_player(young_wing))  # modeled dollar value
+
+aging_star = Player(
+    name="Aging Star", age=34, archetype="High-Volume Playmaker",
+    games_played_last_3=[40, 45, 50],
+    box_plus_minus=4.0, on_off=2.0, epm=4.0, cap_hit=45_000_000,
+)
+print(evaluate_trade("Second Apron", [aging_star], [young_wing]))  # True/False
+```
+
+Individual modules under `analytics/` and `cba/` can also be imported and used standalone.
+
+## Running the tests
+
+```bash
+pytest
+```
+
+The suite in `tests/` covers each analytics function (`test_analytics.py`), each CBA rule
+(`test_cba.py`), the trade-matching and restriction logic (`test_transactions.py`), and a
+full end-to-end scenario combining player valuation with trade legality checks
+(`test_master_pipeline.py`).
