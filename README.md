@@ -28,7 +28,9 @@ The codebase is organized into three domains plus a gateway that ties them toget
   exceed 25%, floored at 0.5x.
 - **`scarcity_curves.py`** — Maps discrete player archetypes (e.g. "Two-Way Wing",
   "Floor-Spacing Rim Protector", "High-Volume Playmaker", "Traditional Low-Volume Big") to a
-  scarcity premium/discount multiplier, defaulting to 1.0x for unrecognized archetypes.
+  scarcity premium/discount multiplier. Unclassified players should use the explicit
+  `"Unknown"` archetype (1.0x, neutral); any other unrecognized label raises `ValueError`
+  rather than silently defaulting, so typos surface immediately instead of being masked.
 
 ### `cba/` — salary cap and tax rules
 

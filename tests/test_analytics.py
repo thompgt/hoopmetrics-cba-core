@@ -53,3 +53,9 @@ def test_scarcity_curves():
     assert get_archetype_multiplier("Two-Way Wing") == 1.25
     assert get_archetype_multiplier("Traditional Low-Volume Big") == 0.85
     assert get_archetype_multiplier("Unknown") == 1.0
+
+def test_scarcity_curves_rejects_unrecognized_archetype():
+    # A typo (missing hyphen) used to silently fall through to a neutral 1.0x
+    # multiplier instead of surfacing the data-entry error.
+    with pytest.raises(ValueError):
+        get_archetype_multiplier("Two Way Wing")
