@@ -42,17 +42,25 @@ def test_pipeline_integration():
     
     # Test Trade Scenario: Second Apron team trading an aging star + minimum player
     min_player = Player("Min Guy", 25, "Unknown", [82, 82, 82], 0.0, 0.0, 0.0, 2_000_000)
-    
+
     # This should fail due to aggregation rules for Second Apron teams
-    assert evaluate_trade("Second Apron", [aging_star, min_player], [young_wing]) == False
-    
-    # If they trade just the star, they can take back up to 125% + 250k.
-    # Outgoing: 45M -> Max incoming: 56.5M. Young wing is 8M, so it's valid.
-    assert evaluate_trade("Second Apron", [aging_star], [young_wing]) == True
-    
+    assert evaluate_trade("Second Apron", "Below Apron", [aging_star, min_player], [young_wing]) == False
+
+    # Trading just the star clears Team A's own bracket (45M -> max incoming
+    # 56.5M, and young_wing is only 8M) -- but salary matching is symmetric,
+    # and Team B would be taking on a $45M salary while sending out only $8M,
+    # which is far outside Team B's own bracket (8M -> max incoming 15.5M).
+    # A trade illegal for either side is illegal, so this must fail too.
+    assert evaluate_trade("Second Apron", "Below Apron", [aging_star], [young_wing]) == False
+
     # First Apron team can't aggregate either
-    assert evaluate_trade("First Apron", [aging_star, min_player], [young_wing]) == False
-    
-    # Below Apron team CAN aggregate
-    # Outgoing: 47M -> Max incoming: 47M * 1.25 + 250k = 59M.
-    assert evaluate_trade("Below Apron", [aging_star, min_player], [young_wing]) == True
+    assert evaluate_trade("First Apron", "Below Apron", [aging_star, min_player], [young_wing]) == False
+
+    # Below Apron team CAN aggregate multiple outgoing salaries, but the same
+    # lopsided salary mismatch above still makes this swap illegal for Team B.
+    assert evaluate_trade("Below Apron", "Below Apron", [aging_star, min_player], [young_wing]) == False
+
+    # A legally symmetric trade: comparable salaries that fit within both
+    # teams' own matching brackets, with no aggregation on either side.
+    comparable_vet = Player("Comparable Vet", 30, "High-Volume Playmaker", [78, 80, 79], 3.5, 2.5, 3.0, 40_000_000)
+    assert evaluate_trade("Below Apron", "Below Apron", [aging_star], [comparable_vet]) == True

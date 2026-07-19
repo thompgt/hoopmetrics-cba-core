@@ -53,23 +53,34 @@ def evaluate_player(player: Player) -> float:
     final_value = _apply_risk_adjustment(base_value, composite_mult)
     return final_value
 
-def evaluate_trade(team_a_apron: str, team_a_sending: list[Player], team_b_sending: list[Player]) -> bool:
+def evaluate_trade(team_a_apron: str, team_b_apron: str,
+                    team_a_sending: list[Player], team_b_sending: list[Player]) -> bool:
     """
     Evaluates if Team A can legally make this trade with Team B under S-TPE and Apron rules.
+
+    Both sides of a trade are subject to the same aggregation and salary-matching
+    rules: each team's incoming salary is bounded by a bracket derived from *that
+    team's own* outgoing salary, so both directions must be checked independently.
     """
     try:
         validate_salary_aggregation(team_a_apron, len(team_a_sending))
+        validate_salary_aggregation(team_b_apron, len(team_b_sending))
     except TradeRestrictionError as e:
         print(f"Trade blocked: {e}")
         return False
-        
+
     team_a_outgoing_salary = sum(p.cap_hit for p in team_a_sending)
-    team_a_incoming_salary = sum(p.cap_hit for p in team_b_sending)
-    
-    max_incoming = get_max_incoming_salary(team_a_outgoing_salary)
-    
-    if team_a_incoming_salary > max_incoming:
-        print(f"Trade blocked: Incoming salary {team_a_incoming_salary} exceeds max {max_incoming}")
+    team_b_outgoing_salary = sum(p.cap_hit for p in team_b_sending)
+
+    max_incoming_for_a = get_max_incoming_salary(team_a_outgoing_salary)
+    max_incoming_for_b = get_max_incoming_salary(team_b_outgoing_salary)
+
+    if team_b_outgoing_salary > max_incoming_for_a:
+        print(f"Trade blocked: Team A's incoming salary {team_b_outgoing_salary} exceeds max {max_incoming_for_a}")
         return False
-        
+
+    if team_a_outgoing_salary > max_incoming_for_b:
+        print(f"Trade blocked: Team B's incoming salary {team_a_outgoing_salary} exceeds max {max_incoming_for_b}")
+        return False
+
     return True

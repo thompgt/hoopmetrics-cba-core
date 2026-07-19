@@ -57,9 +57,11 @@ Defines the `Player` dataclass-like model and two top-level entry points:
 - **`evaluate_player(player)`** — Runs a player through the full analytics pipeline (RAPM +
   EPM -> net impact -> dollar value scaling at $5M per point of net impact -> age, injury,
   and archetype multipliers) to produce a single modeled dollar value.
-- **`evaluate_trade(team_a_apron, team_a_sending, team_b_sending)`** — Validates a proposed
-  trade against apron aggregation rules and S-TPE salary-matching limits, returning `True`
-  if the trade is legal and `False` (with a printed reason) if it is blocked.
+- **`evaluate_trade(team_a_apron, team_b_apron, team_a_sending, team_b_sending)`** — Validates
+  a proposed trade against apron aggregation rules and S-TPE salary-matching limits for
+  **both** teams (each team's incoming salary is bounded by a bracket derived from its own
+  outgoing salary), returning `True` if the trade is legal for both sides and `False` (with a
+  printed reason) if it is blocked.
 
 ## Tech stack
 
@@ -96,7 +98,7 @@ aging_star = Player(
     games_played_last_3=[40, 45, 50],
     box_plus_minus=4.0, on_off=2.0, epm=4.0, cap_hit=45_000_000,
 )
-print(evaluate_trade("Second Apron", [aging_star], [young_wing]))  # True/False
+print(evaluate_trade("Second Apron", "Below Apron", [aging_star], [young_wing]))  # True/False
 ```
 
 Individual modules under `analytics/` and `cba/` can also be imported and used standalone.
