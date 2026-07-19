@@ -1,6 +1,6 @@
 import pytest
 from cba.salary_caps import calculate_max_salary
-from cba.apron_matrix import check_apron_status
+from cba.apron_matrix import check_apron_status, ApronStatus
 from cba.asset_efficiency import compute_contract_efficiency
 
 def test_salary_caps():
@@ -20,9 +20,9 @@ def test_salary_caps():
 def test_apron_matrix():
     first = 150_000_000
     second = 160_000_000
-    assert check_apron_status(140_000_000, first, second) == "Below Apron"
-    assert check_apron_status(155_000_000, first, second) == "First Apron"
-    assert check_apron_status(165_000_000, first, second) == "Second Apron"
+    assert check_apron_status(140_000_000, first, second) == ApronStatus.BELOW_APRON
+    assert check_apron_status(155_000_000, first, second) == ApronStatus.FIRST_APRON
+    assert check_apron_status(165_000_000, first, second) == ApronStatus.SECOND_APRON
 
 def test_asset_efficiency():
     modeled_val = 35_000_000

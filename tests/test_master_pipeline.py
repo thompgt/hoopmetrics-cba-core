@@ -1,5 +1,6 @@
 import pytest
 from engine_gateway import Player, evaluate_player, evaluate_trade
+from cba.apron_matrix import ApronStatus
 
 def test_negative_value_players_are_penalized_not_rewarded_by_risk_discounts():
     # Same bad underlying performance (negative net impact) for both players.
@@ -44,23 +45,23 @@ def test_pipeline_integration():
     min_player = Player("Min Guy", 25, "Unknown", [82, 82, 82], 0.0, 0.0, 0.0, 2_000_000)
 
     # This should fail due to aggregation rules for Second Apron teams
-    assert evaluate_trade("Second Apron", "Below Apron", [aging_star, min_player], [young_wing]) == False
+    assert evaluate_trade(ApronStatus.SECOND_APRON, ApronStatus.BELOW_APRON, [aging_star, min_player], [young_wing]) == False
 
     # Trading just the star clears Team A's own bracket (45M -> max incoming
     # 56.5M, and young_wing is only 8M) -- but salary matching is symmetric,
     # and Team B would be taking on a $45M salary while sending out only $8M,
     # which is far outside Team B's own bracket (8M -> max incoming 15.5M).
     # A trade illegal for either side is illegal, so this must fail too.
-    assert evaluate_trade("Second Apron", "Below Apron", [aging_star], [young_wing]) == False
+    assert evaluate_trade(ApronStatus.SECOND_APRON, ApronStatus.BELOW_APRON, [aging_star], [young_wing]) == False
 
     # First Apron team can't aggregate either
-    assert evaluate_trade("First Apron", "Below Apron", [aging_star, min_player], [young_wing]) == False
+    assert evaluate_trade(ApronStatus.FIRST_APRON, ApronStatus.BELOW_APRON, [aging_star, min_player], [young_wing]) == False
 
     # Below Apron team CAN aggregate multiple outgoing salaries, but the same
     # lopsided salary mismatch above still makes this swap illegal for Team B.
-    assert evaluate_trade("Below Apron", "Below Apron", [aging_star, min_player], [young_wing]) == False
+    assert evaluate_trade(ApronStatus.BELOW_APRON, ApronStatus.BELOW_APRON, [aging_star, min_player], [young_wing]) == False
 
     # A legally symmetric trade: comparable salaries that fit within both
     # teams' own matching brackets, with no aggregation on either side.
     comparable_vet = Player("Comparable Vet", 30, "High-Volume Playmaker", [78, 80, 79], 3.5, 2.5, 3.0, 40_000_000)
-    assert evaluate_trade("Below Apron", "Below Apron", [aging_star], [comparable_vet]) == True
+    assert evaluate_trade(ApronStatus.BELOW_APRON, ApronStatus.BELOW_APRON, [aging_star], [comparable_vet]) == True

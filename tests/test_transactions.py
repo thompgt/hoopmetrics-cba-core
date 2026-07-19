@@ -2,6 +2,7 @@ import pytest
 from transactions.matcher import get_max_incoming_salary
 from transactions.restrictions import validate_salary_aggregation, TradeRestrictionError
 from transactions.equity_balancer import EquityBalancer
+from cba.apron_matrix import ApronStatus
 
 def test_matcher():
     # <= $7.25M
@@ -15,19 +16,28 @@ def test_matcher():
 
 def test_restrictions():
     # Below apron can aggregate
-    validate_salary_aggregation("Below Apron", 2)
-    validate_salary_aggregation("Below Apron", 1)
-    
+    validate_salary_aggregation(ApronStatus.BELOW_APRON, 2)
+    validate_salary_aggregation(ApronStatus.BELOW_APRON, 1)
+
     # Apron teams cannot aggregate
     with pytest.raises(TradeRestrictionError):
-        validate_salary_aggregation("First Apron", 2)
-        
+        validate_salary_aggregation(ApronStatus.FIRST_APRON, 2)
+
     with pytest.raises(TradeRestrictionError):
-        validate_salary_aggregation("Second Apron", 3)
-        
+        validate_salary_aggregation(ApronStatus.SECOND_APRON, 3)
+
     # Apron teams can send 1 player
-    validate_salary_aggregation("First Apron", 1)
-    validate_salary_aggregation("Second Apron", 1)
+    validate_salary_aggregation(ApronStatus.FIRST_APRON, 1)
+    validate_salary_aggregation(ApronStatus.SECOND_APRON, 1)
+
+def test_restrictions_rejects_raw_strings():
+    # A typo'd or mis-cased raw string (e.g. "second apron") used to fail the
+    # membership check silently and skip enforcement entirely. It must now
+    # raise loudly instead of pretending the team is unrestricted.
+    with pytest.raises(TypeError):
+        validate_salary_aggregation("Second Apron", 2)
+    with pytest.raises(TypeError):
+        validate_salary_aggregation("second apron", 2)
 
 def test_equity_balancer():
     balancer = EquityBalancer()

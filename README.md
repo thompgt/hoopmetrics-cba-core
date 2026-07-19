@@ -35,7 +35,8 @@ The codebase is organized into three domains plus a gateway that ties them toget
 - **`salary_caps.py`** — Derives a player's maximum allowable salary bracket from cap space,
   years of service, and All-NBA/"Rose Rule" eligibility (25%/30%/35% of the cap tiers).
 - **`apron_matrix.py`** — Classifies a team's payroll against the First and Second Apron
-  thresholds, returning `"Below Apron"`, `"First Apron"`, or `"Second Apron"`.
+  thresholds, returning an `ApronStatus` enum member (`BELOW_APRON`, `FIRST_APRON`, or
+  `SECOND_APRON`).
 - **`asset_efficiency.py`** — Computes a "Contract Efficiency Index" as the dollar delta
   between a player's modeled value and their actual cap hit.
 
@@ -86,6 +87,7 @@ Import the gateway module and drive it directly, e.g.:
 
 ```python
 from engine_gateway import Player, evaluate_player, evaluate_trade
+from cba.apron_matrix import ApronStatus
 
 young_wing = Player(
     name="Young Star", age=21, archetype="Two-Way Wing",
@@ -99,7 +101,7 @@ aging_star = Player(
     games_played_last_3=[40, 45, 50],
     box_plus_minus=4.0, on_off=2.0, epm=4.0, cap_hit=45_000_000,
 )
-print(evaluate_trade("Second Apron", "Below Apron", [aging_star], [young_wing]))  # True/False
+print(evaluate_trade(ApronStatus.SECOND_APRON, ApronStatus.BELOW_APRON, [aging_star], [young_wing]))  # True/False
 ```
 
 Individual modules under `analytics/` and `cba/` can also be imported and used standalone.

@@ -3,7 +3,7 @@ from analytics.age_curves import get_age_multiplier
 from analytics.injury_risk import get_injury_discount_factor
 from analytics.scarcity_curves import get_archetype_multiplier
 from cba.salary_caps import calculate_max_salary
-from cba.apron_matrix import check_apron_status
+from cba.apron_matrix import check_apron_status, ApronStatus
 from cba.asset_efficiency import compute_contract_efficiency
 from transactions.matcher import get_max_incoming_salary
 from transactions.restrictions import validate_salary_aggregation, TradeRestrictionError
@@ -53,7 +53,7 @@ def evaluate_player(player: Player) -> float:
     final_value = _apply_risk_adjustment(base_value, composite_mult)
     return final_value
 
-def evaluate_trade(team_a_apron: str, team_b_apron: str,
+def evaluate_trade(team_a_apron: ApronStatus, team_b_apron: ApronStatus,
                     team_a_sending: list[Player], team_b_sending: list[Player]) -> bool:
     """
     Evaluates if Team A can legally make this trade with Team B under S-TPE and Apron rules.
