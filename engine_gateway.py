@@ -21,19 +21,36 @@ class Player:
         self.epm = epm
         self.cap_hit = cap_hit
 
+def _apply_risk_adjustment(value: float, multiplier: float) -> float:
+    """Applies a risk/quality multiplier to a signed dollar value such that a
+    discount (multiplier < 1) always makes the value worse and a premium
+    (multiplier > 1) always makes it better, regardless of the value's sign.
+
+    Naively multiplying a negative value by a discount factor makes it less
+    negative (i.e. *better*), which is backwards: an aging, injury-prone,
+    off-archetype player who is already below replacement level should be
+    penalized further, not rewarded. Reflecting the multiplier through 1.0
+    for negative values fixes this while leaving positive-value behavior
+    (the common case) unchanged.
+    """
+    if value >= 0:
+        return value * multiplier
+    return value * (2 - multiplier)
+
 def evaluate_player(player: Player) -> float:
     rapm = calculate_simulated_rapm(player.box_plus_minus, player.on_off)
     parsed_epm = parse_epm(player.epm)
     net_impact = calculate_net_impact_per_100(rapm, parsed_epm)
-    
+
     age_mult = get_age_multiplier(player.age)
     injury_discount = get_injury_discount_factor(player.games_played_last_3)
     archetype_mult = get_archetype_multiplier(player.archetype)
-    
+
     # Simple modeled value scaling: 1 point of net impact = $5M
     base_value = net_impact * 5_000_000
-    
-    final_value = base_value * age_mult * injury_discount * archetype_mult
+
+    composite_mult = age_mult * injury_discount * archetype_mult
+    final_value = _apply_risk_adjustment(base_value, composite_mult)
     return final_value
 
 def evaluate_trade(team_a_apron: str, team_a_sending: list[Player], team_b_sending: list[Player]) -> bool:

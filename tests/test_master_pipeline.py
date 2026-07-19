@@ -1,6 +1,31 @@
 import pytest
 from engine_gateway import Player, evaluate_player, evaluate_trade
 
+def test_negative_value_players_are_penalized_not_rewarded_by_risk_discounts():
+    # Same bad underlying performance (negative net impact) for both players.
+    # Player A is young, healthy, and archetype-neutral -> composite risk
+    # multiplier of ~1.0, so their value should be left roughly unchanged.
+    young_healthy_bad = Player(
+        "Bad But Safe", 26, "Unknown", [82, 82, 82], -2.0, -1.0, -1.5, 5_000_000
+    )
+    # Player B has the identical bad performance, but is aging, injury-prone,
+    # and off-archetype -> composite risk multiplier well below 1.0. Those
+    # are all *negative* signals, so this player should score worse (more
+    # negative), not better, than Player A.
+    old_injured_bad = Player(
+        "Bad And Risky", 34, "Traditional Low-Volume Big", [40, 45, 50], -2.0, -1.0, -1.5, 5_000_000
+    )
+
+    val_a = evaluate_player(young_healthy_bad)
+    val_b = evaluate_player(old_injured_bad)
+
+    assert val_a < 0
+    assert val_b < 0
+    # The riskier/older/off-archetype player must be penalized further, not
+    # rewarded for being risky on top of being bad.
+    assert val_b < val_a
+    assert val_a == pytest.approx(-15_500_000)  # composite multiplier ~1.0, base value unchanged
+
 def test_pipeline_integration():
     # Player 1: Highly scarce, young Two-Way Wing on a rookie contract
     young_wing = Player("Young Star", 21, "Two-Way Wing", [82, 82, 82], 3.0, 4.0, 3.5, 8_000_000)
