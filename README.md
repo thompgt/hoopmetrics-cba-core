@@ -22,9 +22,10 @@ The codebase is organized into three domains plus a gateway that ties them toget
 - **`age_curves.py`** — Applies a non-linear age-based performance multiplier: an upside
   premium under 19, an exponential growth-projection curve for ages 19-23, a flat peak
   baseline for 24-29, and a quadratic decay penalty (floored at 0.1x) for 30+.
-- **`injury_risk.py`** — Tracks a player's "Available Games Ratio" over a rolling 3-season
-  window (games played out of 246 possible) and applies a multiplicative discount once
-  missed games exceed 25%, floored at 0.5x.
+- **`injury_risk.py`** — Tracks a player's "Available Games Ratio" over however many trailing
+  seasons are supplied (typically 3, i.e. games played out of 246 possible, but works for
+  players with a shorter history) and applies a multiplicative discount once missed games
+  exceed 25%, floored at 0.5x.
 - **`scarcity_curves.py`** — Maps discrete player archetypes (e.g. "Two-Way Wing",
   "Floor-Spacing Rim Protector", "High-Volume Playmaker", "Traditional Low-Volume Big") to a
   scarcity premium/discount multiplier, defaulting to 1.0x for unrecognized archetypes.

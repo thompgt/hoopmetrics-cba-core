@@ -31,6 +31,23 @@ def test_injury_risk():
     assert ratio < 0.75
     discount = get_injury_discount_factor([50, 50, 50])
     assert discount < 1.0
+
+def test_injury_risk_short_history():
+    # A rookie with only one season on record should be judged against that
+    # one season's 82 games, not a hardcoded 3-season (246 game) denominator.
+    ratio_rookie = calculate_available_games_ratio([70])
+    assert ratio_rookie == pytest.approx(70 / 82)
+    # 70/82 = ~85% available, well under the 25%-missed discount threshold.
+    assert get_injury_discount_factor([70]) == 1.0
+
+    # A second-year player with two seasons on record is judged against 164
+    # games, not 246.
+    ratio_second_year = calculate_available_games_ratio([80, 80])
+    assert ratio_second_year == pytest.approx(160 / 164)
+
+def test_injury_risk_rejects_empty_history():
+    with pytest.raises(ValueError):
+        calculate_available_games_ratio([])
     
 def test_scarcity_curves():
     assert get_archetype_multiplier("Two-Way Wing") == 1.25

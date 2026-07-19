@@ -1,6 +1,10 @@
 def calculate_available_games_ratio(games_played_last_3_seasons: list[int]) -> float:
-    """Evaluates a player's historical Available Games Ratio over a rolling 3-season window."""
-    total_possible_games = 82 * 3
+    """Evaluates a player's historical Available Games Ratio over a rolling window of
+    however many trailing seasons are provided (typically 3, but works for players
+    with fewer seasons of history, e.g. rookies and second-year players)."""
+    if not games_played_last_3_seasons:
+        raise ValueError("games_played_last_3_seasons must contain at least one season")
+    total_possible_games = 82 * len(games_played_last_3_seasons)
     total_played = sum(games_played_last_3_seasons)
     return total_played / total_possible_games
 
