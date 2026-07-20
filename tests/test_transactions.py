@@ -48,6 +48,13 @@ def test_equity_balancer():
     
     balancer.add_cash(7_000_000)
     assert balancer.cash_sent == 7_000_000
-    
+
     with pytest.raises(ValueError, match="cash limit"):
         balancer.add_cash(1_000_000)
+
+def test_equity_balancer_rejects_negative_cash():
+    balancer = EquityBalancer()
+    with pytest.raises(ValueError, match="negative"):
+        balancer.add_cash(-1_000_000)
+    # The rejected call must not have mutated state.
+    assert balancer.cash_sent == 0.0

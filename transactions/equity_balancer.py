@@ -12,6 +12,8 @@ class EquityBalancer:
         self.pick_swaps_sent += 1
 
     def add_cash(self, amount: float):
+        if amount < 0:
+            raise ValueError("Cash amount sent in a trade cannot be negative.")
         if self.cash_sent + amount > self.CASH_LIMIT:
             raise ValueError(f"Outbound transaction cash limit of ${self.CASH_LIMIT} exceeded.")
         self.cash_sent += amount
