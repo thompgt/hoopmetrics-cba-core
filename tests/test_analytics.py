@@ -57,6 +57,12 @@ def test_injury_risk_short_history():
 def test_injury_risk_rejects_empty_history():
     with pytest.raises(ValueError):
         calculate_available_games_ratio([])
+
+def test_injury_risk_rejects_out_of_range_games_played():
+    with pytest.raises(ValueError):
+        calculate_available_games_ratio([-1, 82, 82])
+    with pytest.raises(ValueError):
+        calculate_available_games_ratio([83, 82, 82])
     
 def test_scarcity_curves():
     assert get_archetype_multiplier("Two-Way Wing") == 1.25

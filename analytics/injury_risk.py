@@ -4,6 +4,11 @@ def calculate_available_games_ratio(games_played_last_3_seasons: list[int]) -> f
     with fewer seasons of history, e.g. rookies and second-year players)."""
     if not games_played_last_3_seasons:
         raise ValueError("games_played_last_3_seasons must contain at least one season")
+    for games in games_played_last_3_seasons:
+        if not 0 <= games <= 82:
+            raise ValueError(
+                f"games played in a season must be between 0 and 82, got {games}"
+            )
     total_possible_games = 82 * len(games_played_last_3_seasons)
     total_played = sum(games_played_last_3_seasons)
     return total_played / total_possible_games

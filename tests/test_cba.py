@@ -17,12 +17,23 @@ def test_salary_caps():
     assert calculate_max_salary(cap, 12, False) == 35_000_000
     assert calculate_max_salary(cap, 12, True) == 35_000_000
 
+def test_salary_caps_rejects_negative_inputs():
+    with pytest.raises(ValueError):
+        calculate_max_salary(-100_000_000, 5, False)
+    with pytest.raises(ValueError):
+        calculate_max_salary(100_000_000, -1, False)
+
 def test_apron_matrix():
     first = 150_000_000
     second = 160_000_000
     assert check_apron_status(140_000_000, first, second) == ApronStatus.BELOW_APRON
     assert check_apron_status(155_000_000, first, second) == ApronStatus.FIRST_APRON
     assert check_apron_status(165_000_000, first, second) == ApronStatus.SECOND_APRON
+
+def test_apron_matrix_rejects_swapped_thresholds():
+    # first_apron/second_apron passed in the wrong order (150M/160M swapped)
+    with pytest.raises(ValueError):
+        check_apron_status(140_000_000, 160_000_000, 150_000_000)
 
 def test_asset_efficiency():
     modeled_val = 35_000_000

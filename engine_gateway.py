@@ -12,6 +12,10 @@ from transactions.equity_balancer import EquityBalancer
 class Player:
     def __init__(self, name: str, age: int, archetype: str, games_played_last_3: list[int],
                  box_plus_minus: float, on_off: float, epm: float, cap_hit: float):
+        if age <= 0:
+            raise ValueError(f"age must be positive, got {age}")
+        if cap_hit < 0:
+            raise ValueError(f"cap_hit cannot be negative, got {cap_hit}")
         self.name = name
         self.age = age
         self.archetype = archetype

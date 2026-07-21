@@ -14,6 +14,10 @@ class ApronStatus(Enum):
 
 def check_apron_status(team_payroll: float, first_apron: float, second_apron: float) -> ApronStatus:
     """Monitors team payroll totals against Tax Apron thresholds."""
+    if first_apron > second_apron:
+        raise ValueError(
+            f"first_apron ({first_apron}) cannot be greater than second_apron ({second_apron})"
+        )
     if team_payroll >= second_apron:
         return ApronStatus.SECOND_APRON
     elif team_payroll >= first_apron:

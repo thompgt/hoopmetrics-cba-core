@@ -2,6 +2,14 @@ import pytest
 from engine_gateway import Player, evaluate_player, evaluate_trade
 from cba.apron_matrix import ApronStatus
 
+def test_player_rejects_invalid_age_and_cap_hit():
+    with pytest.raises(ValueError):
+        Player("Bad Age", 0, "Unknown", [82, 82, 82], 1.0, 1.0, 1.0, 5_000_000)
+    with pytest.raises(ValueError):
+        Player("Bad Age", -5, "Unknown", [82, 82, 82], 1.0, 1.0, 1.0, 5_000_000)
+    with pytest.raises(ValueError):
+        Player("Bad Cap Hit", 25, "Unknown", [82, 82, 82], 1.0, 1.0, 1.0, -5_000_000)
+
 def test_negative_value_players_are_penalized_not_rewarded_by_risk_discounts():
     # Same bad underlying performance (negative net impact) for both players.
     # Player A is young, healthy, and archetype-neutral -> composite risk
