@@ -23,6 +23,12 @@ def test_age_curves():
     assert mult_32 < 1.0
     assert mult_32 == pytest.approx(1.0 - ((32 - 29) ** 2) * 0.015)
 
+def test_age_curve_rejects_non_positive_age():
+    with pytest.raises(ValueError):
+        get_age_multiplier(0)
+    with pytest.raises(ValueError):
+        get_age_multiplier(-3)
+
 def test_age_curve_is_monotonic_across_the_pre_peak_boundary():
     # The growth-projection curve must not dip below the multiplier a
     # slightly older player receives -- an 18-year-old's upside should never

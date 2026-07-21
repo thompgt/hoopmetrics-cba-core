@@ -1,5 +1,7 @@
 def get_age_multiplier(age: int) -> float:
     """Implements non-linear peak-performance curves."""
+    if age <= 0:
+        raise ValueError(f"age must be positive, got {age}")
     if age <= 23:
         # Exponential growth-projection multiplier. Applied for the entire
         # pre-peak range (not just 19-23): the same formula must cover
