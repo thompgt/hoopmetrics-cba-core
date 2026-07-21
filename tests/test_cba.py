@@ -3,6 +3,7 @@ from cba.salary_caps import calculate_max_salary
 from cba.apron_matrix import check_apron_status, ApronStatus
 from cba.asset_efficiency import compute_contract_efficiency, compute_total_contract_value
 from cba.luxury_tax import compute_luxury_tax_bill
+from cba.bird_rights import classify_bird_rights, get_re_signing_salary_cap, BirdRightsStatus
 
 def test_salary_caps():
     cap = 100_000_000
@@ -82,3 +83,24 @@ def test_luxury_tax_bill_rejects_negative_inputs():
         compute_luxury_tax_bill(-1, 200_000_000)
     with pytest.raises(ValueError):
         compute_luxury_tax_bill(200_000_000, -1)
+
+def test_classify_bird_rights():
+    assert classify_bird_rights(0) == BirdRightsStatus.NON_BIRD
+    assert classify_bird_rights(1) == BirdRightsStatus.NON_BIRD
+    assert classify_bird_rights(2) == BirdRightsStatus.EARLY_BIRD
+    assert classify_bird_rights(3) == BirdRightsStatus.FULL_BIRD
+    assert classify_bird_rights(10) == BirdRightsStatus.FULL_BIRD
+    with pytest.raises(ValueError):
+        classify_bird_rights(-1)
+
+def test_re_signing_salary_cap():
+    prior_salary = 10_000_000
+    assert get_re_signing_salary_cap(prior_salary, BirdRightsStatus.NON_BIRD) == 12_000_000
+    assert get_re_signing_salary_cap(prior_salary, BirdRightsStatus.EARLY_BIRD) == 17_500_000
+    # Full Bird rights aren't bounded by prior salary at all.
+    assert get_re_signing_salary_cap(prior_salary, BirdRightsStatus.FULL_BIRD) is None
+
+    with pytest.raises(ValueError):
+        get_re_signing_salary_cap(-1, BirdRightsStatus.NON_BIRD)
+    with pytest.raises(TypeError):
+        get_re_signing_salary_cap(prior_salary, "Non-Bird")

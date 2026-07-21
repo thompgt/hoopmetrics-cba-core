@@ -44,6 +44,10 @@ The codebase is organized into three domains plus a gateway that ties them toget
 - **`luxury_tax.py`** — Computes a team's progressive luxury tax bill: each $5M of payroll
   above the tax line is taxed at a higher marginal rate, with a repeater surcharge for teams
   that have paid the tax in at least 3 of the previous 4 seasons.
+- **`bird_rights.py`** — Classifies a free agent's "Bird rights" tier (Non-Bird, Early Bird,
+  Full Bird) from consecutive seasons with the same team, and derives the cap-exceeding
+  re-signing salary limit that tier grants (175%/120% of prior salary for Early/Non-Bird;
+  Full Bird is only bounded by the player's ordinary max-salary bracket).
 - **`asset_efficiency.py`** — Computes a "Contract Efficiency Index" as the per-year dollar
   delta between a player's modeled value and their actual cap hit, plus a total contract
   value that compounds that per-year delta across however many years remain on the deal.
