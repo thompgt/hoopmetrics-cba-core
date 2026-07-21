@@ -41,6 +41,9 @@ The codebase is organized into three domains plus a gateway that ties them toget
 - **`apron_matrix.py`** — Classifies a team's payroll against the First and Second Apron
   thresholds, returning an `ApronStatus` enum member (`BELOW_APRON`, `FIRST_APRON`, or
   `SECOND_APRON`).
+- **`luxury_tax.py`** — Computes a team's progressive luxury tax bill: each $5M of payroll
+  above the tax line is taxed at a higher marginal rate, with a repeater surcharge for teams
+  that have paid the tax in at least 3 of the previous 4 seasons.
 - **`asset_efficiency.py`** — Computes a "Contract Efficiency Index" as the per-year dollar
   delta between a player's modeled value and their actual cap hit, plus a total contract
   value that compounds that per-year delta across however many years remain on the deal.

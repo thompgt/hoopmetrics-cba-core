@@ -2,6 +2,7 @@ import pytest
 from cba.salary_caps import calculate_max_salary
 from cba.apron_matrix import check_apron_status, ApronStatus
 from cba.asset_efficiency import compute_contract_efficiency, compute_total_contract_value
+from cba.luxury_tax import compute_luxury_tax_bill
 
 def test_salary_caps():
     cap = 100_000_000
@@ -56,3 +57,28 @@ def test_total_contract_value_compounds_across_years_remaining():
 
     with pytest.raises(ValueError):
         compute_total_contract_value(modeled_val, cap_hit, 0)
+
+def test_luxury_tax_bill_below_the_line_is_zero():
+    assert compute_luxury_tax_bill(190_000_000, 200_000_000) == 0.0
+    assert compute_luxury_tax_bill(200_000_000, 200_000_000) == 0.0
+
+def test_luxury_tax_bill_progressive_brackets():
+    tax_line = 200_000_000
+    # $3M over -> fully in the first ($0-5M) bracket at 1.5x
+    assert compute_luxury_tax_bill(203_000_000, tax_line) == pytest.approx(4_500_000)
+    # $7M over -> $5M @ 1.5x + $2M @ 1.75x
+    assert compute_luxury_tax_bill(207_000_000, tax_line) == pytest.approx(11_000_000)
+    # $25M over -> all 4 brackets ($45M) + $5M in the first "extra" bracket @ 3.75x
+    assert compute_luxury_tax_bill(225_000_000, tax_line) == pytest.approx(63_750_000)
+
+def test_luxury_tax_bill_repeater_surcharge_is_higher():
+    tax_line = 200_000_000
+    non_repeater = compute_luxury_tax_bill(210_000_000, tax_line, is_repeater=False)
+    repeater = compute_luxury_tax_bill(210_000_000, tax_line, is_repeater=True)
+    assert repeater > non_repeater
+
+def test_luxury_tax_bill_rejects_negative_inputs():
+    with pytest.raises(ValueError):
+        compute_luxury_tax_bill(-1, 200_000_000)
+    with pytest.raises(ValueError):
+        compute_luxury_tax_bill(200_000_000, -1)
