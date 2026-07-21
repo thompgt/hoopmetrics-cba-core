@@ -1,9 +1,17 @@
+from cba.apron_matrix import ApronStatus
+
 class EquityBalancer:
-    def __init__(self):
+    def __init__(self, apron_status: ApronStatus = ApronStatus.BELOW_APRON):
         self.draft_picks_sent = 0
         self.pick_swaps_sent = 0
         self.cash_sent = 0.0
-        self.CASH_LIMIT = 7_960_000.0
+        # First/Second Apron teams are barred from sending cash in trades
+        # entirely under the current CBA; only teams below the First Apron
+        # get the standard league cash-in-trade limit.
+        if apron_status in (ApronStatus.FIRST_APRON, ApronStatus.SECOND_APRON):
+            self.CASH_LIMIT = 0.0
+        else:
+            self.CASH_LIMIT = 7_960_000.0
 
     def add_draft_pick(self):
         self.draft_picks_sent += 1

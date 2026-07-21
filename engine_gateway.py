@@ -58,7 +58,8 @@ def evaluate_player(player: Player) -> float:
     return final_value
 
 def evaluate_trade(team_a_apron: ApronStatus, team_b_apron: ApronStatus,
-                    team_a_sending: list[Player], team_b_sending: list[Player]) -> bool:
+                    team_a_sending: list[Player], team_b_sending: list[Player],
+                    team_a_equity: EquityBalancer = None, team_b_equity: EquityBalancer = None) -> bool:
     """
     Evaluates if Team A can legally make this trade with Team B under S-TPE and Apron rules.
 
@@ -68,6 +69,12 @@ def evaluate_trade(team_a_apron: ApronStatus, team_b_apron: ApronStatus,
     be checked independently. Second Apron teams are hard-capped at 1:1 salary
     matching and First Apron teams near 110%, regardless of the standard S-TPE
     brackets a team below the First Apron would otherwise receive.
+
+    team_a_equity/team_b_equity are optional EquityBalancer instances tracking
+    non-salary assets (cash, picks) each team is sending. If provided, the
+    cash-in-trade limit is enforced here rather than trusting that the
+    balancer was constructed with the matching apron status: First/Second
+    Apron teams cannot send any cash in a trade, full stop.
     """
     try:
         validate_salary_aggregation(team_a_apron, len(team_a_sending))
@@ -75,6 +82,11 @@ def evaluate_trade(team_a_apron: ApronStatus, team_b_apron: ApronStatus,
     except TradeRestrictionError as e:
         print(f"Trade blocked: {e}")
         return False
+
+    for label, apron, equity in (("Team A", team_a_apron, team_a_equity), ("Team B", team_b_apron, team_b_equity)):
+        if equity is not None and apron in (ApronStatus.FIRST_APRON, ApronStatus.SECOND_APRON) and equity.cash_sent > 0:
+            print(f"Trade blocked: {label} is {apron.value} and cannot send cash (${equity.cash_sent}) in a trade")
+            return False
 
     team_a_outgoing_salary = sum(p.cap_hit for p in team_a_sending)
     team_b_outgoing_salary = sum(p.cap_hit for p in team_b_sending)

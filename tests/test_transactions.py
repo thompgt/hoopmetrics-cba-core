@@ -70,3 +70,15 @@ def test_equity_balancer_rejects_negative_cash():
         balancer.add_cash(-1_000_000)
     # The rejected call must not have mutated state.
     assert balancer.cash_sent == 0.0
+
+def test_equity_balancer_bars_cash_for_apron_teams():
+    # First/Second Apron teams cannot send any cash in a trade.
+    for apron in (ApronStatus.FIRST_APRON, ApronStatus.SECOND_APRON):
+        balancer = EquityBalancer(apron)
+        assert balancer.CASH_LIMIT == 0.0
+        with pytest.raises(ValueError, match="cash limit"):
+            balancer.add_cash(1)
+
+    # A Below Apron team still gets the standard limit.
+    below_apron_balancer = EquityBalancer(ApronStatus.BELOW_APRON)
+    assert below_apron_balancer.CASH_LIMIT == 7_960_000.0

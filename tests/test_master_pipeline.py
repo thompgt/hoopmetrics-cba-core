@@ -1,6 +1,7 @@
 import pytest
 from engine_gateway import Player, evaluate_player, evaluate_trade
 from cba.apron_matrix import ApronStatus
+from transactions.equity_balancer import EquityBalancer
 
 def test_player_rejects_invalid_age_and_cap_hit():
     with pytest.raises(ValueError):
@@ -82,3 +83,18 @@ def test_second_apron_team_cannot_use_standard_stpe_bracket():
     team_a_player = Player("Team A Player", 27, "Unknown", [82, 82, 82], 1.0, 1.0, 1.0, 20_000_000)
     team_b_player = Player("Team B Player", 27, "Unknown", [82, 82, 82], 1.0, 1.0, 1.0, 25_000_000)
     assert evaluate_trade(ApronStatus.SECOND_APRON, ApronStatus.BELOW_APRON, [team_a_player], [team_b_player]) == False
+
+def test_apron_team_cannot_include_cash_in_a_trade():
+    # An otherwise-legal, salary-matched, non-aggregated trade...
+    team_a_player = Player("Team A Player", 27, "Unknown", [82, 82, 82], 1.0, 1.0, 1.0, 20_000_000)
+    team_b_player = Player("Team B Player", 27, "Unknown", [82, 82, 82], 1.0, 1.0, 1.0, 20_000_000)
+    assert evaluate_trade(ApronStatus.FIRST_APRON, ApronStatus.BELOW_APRON, [team_a_player], [team_b_player]) == True
+
+    # ...becomes illegal the moment the First Apron team sweetens it with cash.
+    team_a_equity = EquityBalancer(ApronStatus.BELOW_APRON)  # constructed with the wrong apron status
+    team_a_equity.add_cash(1_000_000)  # would be allowed by a below-apron balancer
+    assert evaluate_trade(
+        ApronStatus.FIRST_APRON, ApronStatus.BELOW_APRON,
+        [team_a_player], [team_b_player],
+        team_a_equity=team_a_equity,
+    ) == False
