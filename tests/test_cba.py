@@ -1,5 +1,5 @@
 import pytest
-from cba.salary_caps import calculate_max_salary
+from cba.salary_caps import calculate_max_salary, apply_trade_kicker
 from cba.apron_matrix import check_apron_status, ApronStatus
 from cba.asset_efficiency import compute_contract_efficiency, compute_total_contract_value
 from cba.luxury_tax import compute_luxury_tax_bill
@@ -24,6 +24,19 @@ def test_salary_caps_rejects_negative_inputs():
         calculate_max_salary(-100_000_000, 5, False)
     with pytest.raises(ValueError):
         calculate_max_salary(100_000_000, -1, False)
+
+def test_apply_trade_kicker():
+    # 10% kicker on a 20M salary, well under the max salary ceiling.
+    assert apply_trade_kicker(20_000_000, 0.10, 40_000_000) == pytest.approx(22_000_000)
+
+    # A kicker that would push the salary above the player's max-salary
+    # bracket gets capped there instead -- the excess is forfeited, not paid.
+    assert apply_trade_kicker(38_000_000, 0.15, 40_000_000) == 40_000_000
+
+    with pytest.raises(ValueError):
+        apply_trade_kicker(20_000_000, 0.20, 40_000_000)  # exceeds the 15% max
+    with pytest.raises(ValueError):
+        apply_trade_kicker(-1, 0.10, 40_000_000)
 
 def test_apron_matrix():
     first = 150_000_000

@@ -38,6 +38,8 @@ The codebase is organized into three domains plus a gateway that ties them toget
 
 - **`salary_caps.py`** — Derives a player's maximum allowable salary bracket from cap space,
   years of service, and All-NBA/"Rose Rule" eligibility (25%/30%/35% of the cap tiers).
+  Also applies trade bonus ("kicker") clauses via `apply_trade_kicker`, boosting salary by
+  up to 15% when a player is traded, capped at the player's max-salary bracket.
 - **`apron_matrix.py`** — Classifies a team's payroll against the First and Second Apron
   thresholds, returning an `ApronStatus` enum member (`BELOW_APRON`, `FIRST_APRON`, or
   `SECOND_APRON`).
