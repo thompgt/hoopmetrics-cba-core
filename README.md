@@ -39,20 +39,24 @@ The codebase is organized into three domains plus a gateway that ties them toget
 - **`apron_matrix.py`** — Classifies a team's payroll against the First and Second Apron
   thresholds, returning an `ApronStatus` enum member (`BELOW_APRON`, `FIRST_APRON`, or
   `SECOND_APRON`).
-- **`asset_efficiency.py`** — Computes a "Contract Efficiency Index" as the dollar delta
-  between a player's modeled value and their actual cap hit.
+- **`asset_efficiency.py`** — Computes a "Contract Efficiency Index" as the per-year dollar
+  delta between a player's modeled value and their actual cap hit, plus a total contract
+  value that compounds that per-year delta across however many years remain on the deal.
 
 ### `transactions/` — trade legality engine
 
 - **`matcher.py`** — Implements Simultaneous Trade Exception (S-TPE) salary-matching
   brackets, returning the maximum incoming salary a team may take back for a given
-  outgoing salary.
+  outgoing salary. Below-Apron teams get the full tiered brackets; First Apron teams
+  are capped near 110% of outgoing salary and Second Apron teams at strict 1:1,
+  regardless of the standard brackets.
 - **`restrictions.py`** — Enforces First/Second Apron salary-aggregation restrictions,
   raising a `TradeRestrictionError` if an apron team tries to combine more than one outgoing
   player's salary in a single trade.
 - **`equity_balancer.py`** — Tracks non-salary trade assets sent by a team (draft picks,
   pick swaps, cash) and enforces the league cash-in-trade limit (currently modeled at
-  $7,960,000).
+  $7,960,000) for teams below the First Apron; First/Second Apron teams are barred
+  from sending any cash in a trade at all.
 
 ### `engine_gateway.py` — integration layer
 
@@ -61,11 +65,13 @@ Defines the `Player` dataclass-like model and two top-level entry points:
 - **`evaluate_player(player)`** — Runs a player through the full analytics pipeline (RAPM +
   EPM -> net impact -> dollar value scaling at $5M per point of net impact -> age, injury,
   and archetype multipliers) to produce a single modeled dollar value.
-- **`evaluate_trade(team_a_apron, team_b_apron, team_a_sending, team_b_sending)`** — Validates
-  a proposed trade against apron aggregation rules and S-TPE salary-matching limits for
-  **both** teams (each team's incoming salary is bounded by a bracket derived from its own
-  outgoing salary), returning `True` if the trade is legal for both sides and `False` (with a
-  printed reason) if it is blocked.
+- **`evaluate_trade(team_a_apron, team_b_apron, team_a_sending, team_b_sending, team_a_equity=None, team_b_equity=None)`**
+  — Validates a proposed trade against apron aggregation rules and apron-aware S-TPE
+  salary-matching limits for **both** teams (each team's incoming salary is bounded by a
+  bracket derived from its own outgoing salary and its own apron status). If
+  `EquityBalancer` instances are passed for either team, also blocks the trade if a
+  First/Second Apron team is sending any cash. Returns `True` if the trade is legal for
+  both sides and `False` (with a printed reason) if it is blocked.
 
 ## Tech stack
 
