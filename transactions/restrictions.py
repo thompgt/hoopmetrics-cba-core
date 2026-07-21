@@ -11,6 +11,8 @@ def validate_salary_aggregation(team_apron_status: ApronStatus, num_outgoing_pla
         raise TypeError(
             f"team_apron_status must be an ApronStatus enum member, got {team_apron_status!r}"
         )
+    if num_outgoing_players < 0:
+        raise ValueError(f"num_outgoing_players cannot be negative, got {num_outgoing_players}")
     if team_apron_status in (ApronStatus.FIRST_APRON, ApronStatus.SECOND_APRON) and num_outgoing_players > 1:
         raise TradeRestrictionError(
             f"{team_apron_status.value} teams are prohibited from aggregating multiple outgoing player salaries."

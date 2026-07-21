@@ -13,6 +13,9 @@ def get_max_incoming_salary(outgoing_salary: float, apron_status: ApronStatus = 
     on matching -- letting hard-capped teams take back far more salary
     than the CBA allows.
     """
+    if outgoing_salary < 0:
+        raise ValueError(f"outgoing_salary cannot be negative, got {outgoing_salary}")
+
     if apron_status == ApronStatus.SECOND_APRON:
         return outgoing_salary
     if apron_status == ApronStatus.FIRST_APRON:

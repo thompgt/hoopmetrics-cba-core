@@ -26,6 +26,10 @@ def test_matcher_is_apron_aware():
     assert get_max_incoming_salary(10_000_000, ApronStatus.FIRST_APRON) == pytest.approx(11_100_000)
     assert get_max_incoming_salary(10_000_000, ApronStatus.FIRST_APRON) < get_max_incoming_salary(10_000_000, ApronStatus.BELOW_APRON)
 
+def test_matcher_rejects_negative_outgoing_salary():
+    with pytest.raises(ValueError):
+        get_max_incoming_salary(-1)
+
 def test_restrictions():
     # Below apron can aggregate
     validate_salary_aggregation(ApronStatus.BELOW_APRON, 2)
@@ -41,6 +45,10 @@ def test_restrictions():
     # Apron teams can send 1 player
     validate_salary_aggregation(ApronStatus.FIRST_APRON, 1)
     validate_salary_aggregation(ApronStatus.SECOND_APRON, 1)
+
+def test_restrictions_rejects_negative_player_count():
+    with pytest.raises(ValueError):
+        validate_salary_aggregation(ApronStatus.BELOW_APRON, -1)
 
 def test_restrictions_rejects_raw_strings():
     # A typo'd or mis-cased raw string (e.g. "second apron") used to fail the
