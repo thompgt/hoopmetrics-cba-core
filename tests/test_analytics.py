@@ -23,6 +23,15 @@ def test_age_curves():
     assert mult_32 < 1.0
     assert mult_32 == pytest.approx(1.0 - ((32 - 29) ** 2) * 0.015)
 
+def test_age_curve_is_monotonic_across_the_pre_peak_boundary():
+    # The growth-projection curve must not dip below the multiplier a
+    # slightly older player receives -- an 18-year-old's upside should never
+    # be valued less than a 19-year-old's.
+    ages = list(range(14, 31))
+    multipliers = [get_age_multiplier(a) for a in ages]
+    for younger, older in zip(multipliers, multipliers[1:]):
+        assert younger >= older
+
 def test_injury_risk():
     # 82, 82, 82 -> 1.0
     assert get_injury_discount_factor([82, 82, 82]) == 1.0
