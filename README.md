@@ -25,7 +25,9 @@ The codebase is organized into three domains plus a gateway that ties them toget
 - **`injury_risk.py`** — Tracks a player's "Available Games Ratio" over however many trailing
   seasons are supplied (typically 3, i.e. games played out of 246 possible, but works for
   players with a shorter history) and applies a multiplicative discount once missed games
-  exceed 25%, floored at 0.5x.
+  exceed 25%, floored at 0.5x. The discount factor weights more recent seasons more heavily
+  than older ones (assumes seasons are ordered oldest-to-most-recent), since a season missed
+  three years ago is a weaker signal of current injury risk than one missed last year.
 - **`scarcity_curves.py`** — Maps discrete player archetypes (e.g. "Two-Way Wing",
   "Floor-Spacing Rim Protector", "High-Volume Playmaker", "Traditional Low-Volume Big") to a
   scarcity premium/discount multiplier. Unclassified players should use the explicit
