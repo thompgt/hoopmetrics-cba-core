@@ -26,6 +26,12 @@ def test_player_rejects_invalid_minutes_per_game():
     with pytest.raises(ValueError):
         Player("Bad Minutes", 26, "Unknown", [82, 82, 82], 1.0, 1.0, 1.0, 5_000_000, minutes_per_game=49)
 
+def test_player_rejects_unrecognized_archetype_at_construction():
+    # Previously this only failed once evaluate_player was called; a typo'd
+    # archetype should surface as soon as the Player is built.
+    with pytest.raises(ValueError):
+        Player("Typo Wing", 25, "Two Way Wing", [82, 82, 82], 1.0, 1.0, 1.0, 5_000_000)
+
 def test_player_rejects_invalid_age_and_cap_hit():
     with pytest.raises(ValueError):
         Player("Bad Age", 0, "Unknown", [82, 82, 82], 1.0, 1.0, 1.0, 5_000_000)

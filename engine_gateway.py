@@ -19,6 +19,11 @@ class Player:
             raise ValueError(f"cap_hit cannot be negative, got {cap_hit}")
         if not 0 < minutes_per_game <= 48:
             raise ValueError(f"minutes_per_game must be in (0, 48], got {minutes_per_game}")
+        # Validate eagerly at construction time rather than waiting for
+        # evaluate_player to be called -- a typo'd archetype should surface
+        # when a Player is built into a roster/pipeline, not silently sit
+        # there until whenever it happens to be evaluated.
+        get_archetype_multiplier(archetype)
         self.name = name
         self.age = age
         self.archetype = archetype
