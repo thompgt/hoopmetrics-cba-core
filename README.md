@@ -65,7 +65,9 @@ The codebase is organized into three domains plus a gateway that ties them toget
 - **`equity_balancer.py`** — Tracks non-salary trade assets sent by a team (draft picks,
   pick swaps, cash) and enforces the league cash-in-trade limit (currently modeled at
   $7,960,000) for teams below the First Apron; First/Second Apron teams are barred
-  from sending any cash in a trade at all.
+  from sending any cash in a trade at all. Also enforces the Stepien Rule via
+  `add_first_round_pick_for_year`, raising `StepienRuleViolation` if trading a specific
+  year's first-round pick would leave the team without a first-rounder in consecutive drafts.
 
 ### `engine_gateway.py` — integration layer
 

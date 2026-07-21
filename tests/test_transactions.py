@@ -1,7 +1,7 @@
 import pytest
 from transactions.matcher import get_max_incoming_salary
 from transactions.restrictions import validate_salary_aggregation, TradeRestrictionError
-from transactions.equity_balancer import EquityBalancer
+from transactions.equity_balancer import EquityBalancer, StepienRuleViolation
 from cba.apron_matrix import ApronStatus
 
 def test_matcher():
@@ -82,3 +82,26 @@ def test_equity_balancer_bars_cash_for_apron_teams():
     # A Below Apron team still gets the standard limit.
     below_apron_balancer = EquityBalancer(ApronStatus.BELOW_APRON)
     assert below_apron_balancer.CASH_LIMIT == 7_960_000.0
+
+def test_stepien_rule_blocks_two_consecutive_empty_drafts():
+    balancer = EquityBalancer()
+    # Team already traded away its 2028 first-rounder; 2027 is its last pick
+    # (a swap-protected pick they got back doesn't count toward 2027 here).
+    picks_owned = {2027: 1, 2028: 0}
+    with pytest.raises(StepienRuleViolation):
+        balancer.add_first_round_pick_for_year(2027, picks_owned)
+    # The rejected call must not have mutated state.
+    assert balancer.draft_picks_sent == 0
+
+def test_stepien_rule_allows_trading_a_second_first_rounder():
+    balancer = EquityBalancer()
+    # Team owns two 2027 first-rounders (its own + an acquired one); trading
+    # one still leaves them a first-rounder that year.
+    picks_owned = {2027: 2}
+    balancer.add_first_round_pick_for_year(2027, picks_owned)
+    assert balancer.draft_picks_sent == 1
+
+def test_stepien_rule_rejects_trading_an_unowned_pick():
+    balancer = EquityBalancer()
+    with pytest.raises(ValueError):
+        balancer.add_first_round_pick_for_year(2027, {2027: 0})
