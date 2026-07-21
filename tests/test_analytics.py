@@ -53,6 +53,22 @@ def test_injury_risk():
     discount = get_injury_discount_factor([50, 50, 50])
     assert discount < 1.0
 
+def test_injury_risk_weights_recent_seasons_more_heavily():
+    # Same total games missed across 3 seasons either way, but one player
+    # missed time long ago and has since recovered (recent season healthy),
+    # while the other missed time only in the most recent season -- a
+    # stronger signal of current/future injury risk.
+    recovered_recently = [0, 82, 82]   # oldest season missed entirely, recent seasons healthy
+    declining_recently = [82, 82, 0]   # most recent season missed entirely, older seasons healthy
+
+    discount_recovered = get_injury_discount_factor(recovered_recently)
+    discount_declining = get_injury_discount_factor(declining_recently)
+
+    # calculate_available_games_ratio (unweighted) sees these as identical.
+    assert calculate_available_games_ratio(recovered_recently) == calculate_available_games_ratio(declining_recently)
+    # But the discount factor must treat the recently-declining player as riskier.
+    assert discount_declining < discount_recovered
+
 def test_injury_risk_short_history():
     # A rookie with only one season on record should be judged against that
     # one season's 82 games, not a hardcoded 3-season (246 game) denominator.
