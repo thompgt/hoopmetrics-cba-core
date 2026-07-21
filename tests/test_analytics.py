@@ -12,6 +12,12 @@ def test_impact_metrics():
     net_impact = calculate_net_impact_per_100(rapm, epm)
     assert net_impact == pytest.approx(5.1)
 
+def test_parse_epm_rejects_implausible_values():
+    with pytest.raises(ValueError):
+        parse_epm(100)
+    with pytest.raises(ValueError):
+        parse_epm(-50)
+
 def test_age_curves():
     # Age 19-23
     mult_20 = get_age_multiplier(20)
