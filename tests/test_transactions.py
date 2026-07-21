@@ -14,6 +14,18 @@ def test_matcher():
     # > $29M
     assert get_max_incoming_salary(30_000_000) == 37_750_000  # (30M * 1.25) + 250k
 
+def test_matcher_is_apron_aware():
+    # Below Apron teams still get the full tiered S-TPE brackets.
+    assert get_max_incoming_salary(10_000_000, ApronStatus.BELOW_APRON) == 17_500_000
+
+    # Second Apron teams cannot take back any salary beyond what they send.
+    assert get_max_incoming_salary(30_000_000, ApronStatus.SECOND_APRON) == 30_000_000
+
+    # First Apron teams are capped near 110% of outgoing salary, far below
+    # the standard S-TPE bracket for the same outgoing salary.
+    assert get_max_incoming_salary(10_000_000, ApronStatus.FIRST_APRON) == pytest.approx(11_100_000)
+    assert get_max_incoming_salary(10_000_000, ApronStatus.FIRST_APRON) < get_max_incoming_salary(10_000_000, ApronStatus.BELOW_APRON)
+
 def test_restrictions():
     # Below apron can aggregate
     validate_salary_aggregation(ApronStatus.BELOW_APRON, 2)

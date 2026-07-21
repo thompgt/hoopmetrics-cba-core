@@ -64,7 +64,10 @@ def evaluate_trade(team_a_apron: ApronStatus, team_b_apron: ApronStatus,
 
     Both sides of a trade are subject to the same aggregation and salary-matching
     rules: each team's incoming salary is bounded by a bracket derived from *that
-    team's own* outgoing salary, so both directions must be checked independently.
+    team's own* outgoing salary and its own apron status, so both directions must
+    be checked independently. Second Apron teams are hard-capped at 1:1 salary
+    matching and First Apron teams near 110%, regardless of the standard S-TPE
+    brackets a team below the First Apron would otherwise receive.
     """
     try:
         validate_salary_aggregation(team_a_apron, len(team_a_sending))
@@ -76,8 +79,8 @@ def evaluate_trade(team_a_apron: ApronStatus, team_b_apron: ApronStatus,
     team_a_outgoing_salary = sum(p.cap_hit for p in team_a_sending)
     team_b_outgoing_salary = sum(p.cap_hit for p in team_b_sending)
 
-    max_incoming_for_a = get_max_incoming_salary(team_a_outgoing_salary)
-    max_incoming_for_b = get_max_incoming_salary(team_b_outgoing_salary)
+    max_incoming_for_a = get_max_incoming_salary(team_a_outgoing_salary, team_a_apron)
+    max_incoming_for_b = get_max_incoming_salary(team_b_outgoing_salary, team_b_apron)
 
     if team_b_outgoing_salary > max_incoming_for_a:
         print(f"Trade blocked: Team A's incoming salary {team_b_outgoing_salary} exceeds max {max_incoming_for_a}")

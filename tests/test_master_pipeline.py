@@ -73,3 +73,12 @@ def test_pipeline_integration():
     # teams' own matching brackets, with no aggregation on either side.
     comparable_vet = Player("Comparable Vet", 30, "High-Volume Playmaker", [78, 80, 79], 3.5, 2.5, 3.0, 40_000_000)
     assert evaluate_trade(ApronStatus.BELOW_APRON, ApronStatus.BELOW_APRON, [aging_star], [comparable_vet]) == True
+
+def test_second_apron_team_cannot_use_standard_stpe_bracket():
+    # A single-player, non-aggregated swap that the standard S-TPE bracket
+    # would allow (20M -> up to 27.5M incoming), so this only fails once the
+    # Second Apron team's own matching bracket is correctly hard-capped at
+    # 1:1 instead of falling back to the generous below-apron bracket.
+    team_a_player = Player("Team A Player", 27, "Unknown", [82, 82, 82], 1.0, 1.0, 1.0, 20_000_000)
+    team_b_player = Player("Team B Player", 27, "Unknown", [82, 82, 82], 1.0, 1.0, 1.0, 25_000_000)
+    assert evaluate_trade(ApronStatus.SECOND_APRON, ApronStatus.BELOW_APRON, [team_a_player], [team_b_player]) == False
