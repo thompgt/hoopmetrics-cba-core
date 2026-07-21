@@ -3,6 +3,29 @@ from engine_gateway import Player, evaluate_player, evaluate_trade
 from cba.apron_matrix import ApronStatus
 from transactions.equity_balancer import EquityBalancer
 
+def test_evaluate_player_scales_by_minutes_played():
+    # Identical rate stats, different workload -- a bench player's total
+    # impact should be worth less than a full-time starter's.
+    starter = Player("Starter", 26, "Unknown", [82, 82, 82], 3.0, 3.0, 3.0, 10_000_000, minutes_per_game=32.0)
+    bench_player = Player("Bench Player", 26, "Unknown", [82, 82, 82], 3.0, 3.0, 3.0, 10_000_000, minutes_per_game=16.0)
+
+    val_starter = evaluate_player(starter)
+    val_bench = evaluate_player(bench_player)
+
+    assert val_bench == pytest.approx(val_starter * 0.5)
+
+    # The same volume scaling must shrink a bad player's negative value too,
+    # not flip its sign or make it worse.
+    bad_starter = Player("Bad Starter", 26, "Unknown", [82, 82, 82], -3.0, -3.0, -3.0, 10_000_000, minutes_per_game=32.0)
+    bad_bench_player = Player("Bad Bench Player", 26, "Unknown", [82, 82, 82], -3.0, -3.0, -3.0, 10_000_000, minutes_per_game=16.0)
+    assert evaluate_player(bad_bench_player) == pytest.approx(evaluate_player(bad_starter) * 0.5)
+
+def test_player_rejects_invalid_minutes_per_game():
+    with pytest.raises(ValueError):
+        Player("Bad Minutes", 26, "Unknown", [82, 82, 82], 1.0, 1.0, 1.0, 5_000_000, minutes_per_game=0)
+    with pytest.raises(ValueError):
+        Player("Bad Minutes", 26, "Unknown", [82, 82, 82], 1.0, 1.0, 1.0, 5_000_000, minutes_per_game=49)
+
 def test_player_rejects_invalid_age_and_cap_hit():
     with pytest.raises(ValueError):
         Player("Bad Age", 0, "Unknown", [82, 82, 82], 1.0, 1.0, 1.0, 5_000_000)

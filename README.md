@@ -75,7 +75,8 @@ Defines the `Player` dataclass-like model and two top-level entry points:
 
 - **`evaluate_player(player)`** — Runs a player through the full analytics pipeline (RAPM +
   EPM -> net impact -> dollar value scaling at $5M per point of net impact -> age, injury,
-  and archetype multipliers) to produce a single modeled dollar value.
+  and archetype multipliers -> a minutes-played workload scalar against a 32-minute
+  full-time-starter baseline) to produce a single modeled dollar value.
 - **`evaluate_trade(team_a_apron, team_b_apron, team_a_sending, team_b_sending, team_a_equity=None, team_b_equity=None)`**
   — Validates a proposed trade against apron aggregation rules and apron-aware S-TPE
   salary-matching limits for **both** teams (each team's incoming salary is bounded by a

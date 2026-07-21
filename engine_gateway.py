@@ -11,11 +11,14 @@ from transactions.equity_balancer import EquityBalancer
 
 class Player:
     def __init__(self, name: str, age: int, archetype: str, games_played_last_3: list[int],
-                 box_plus_minus: float, on_off: float, epm: float, cap_hit: float):
+                 box_plus_minus: float, on_off: float, epm: float, cap_hit: float,
+                 minutes_per_game: float = 32.0):
         if age <= 0:
             raise ValueError(f"age must be positive, got {age}")
         if cap_hit < 0:
             raise ValueError(f"cap_hit cannot be negative, got {cap_hit}")
+        if not 0 < minutes_per_game <= 48:
+            raise ValueError(f"minutes_per_game must be in (0, 48], got {minutes_per_game}")
         self.name = name
         self.age = age
         self.archetype = archetype
@@ -24,6 +27,7 @@ class Player:
         self.on_off = on_off
         self.epm = epm
         self.cap_hit = cap_hit
+        self.minutes_per_game = minutes_per_game
 
 def _apply_risk_adjustment(value: float, multiplier: float) -> float:
     """Applies a risk/quality multiplier to a signed dollar value such that a
@@ -55,6 +59,19 @@ def evaluate_player(player: Player) -> float:
 
     composite_mult = age_mult * injury_discount * archetype_mult
     final_value = _apply_risk_adjustment(base_value, composite_mult)
+
+    # Per-100-possession efficiency alone doesn't capture total on-court
+    # value: a bench player racking up huge rate stats in limited minutes
+    # contributes far less total impact than a starter posting the same
+    # rate over a full workload. Scale against a 32-minute full-time
+    # starter baseline; this is a straight volume scalar (not a
+    # quality discount/premium), so it applies symmetrically to positive
+    # and negative values alike without the sign-reflection _apply_risk_adjustment
+    # needs -- fewer minutes shrinks a bad player's total damage exactly
+    # as much as it shrinks a good player's total contribution.
+    workload_mult = player.minutes_per_game / 32.0
+    final_value *= workload_mult
+
     return final_value
 
 def evaluate_trade(team_a_apron: ApronStatus, team_b_apron: ApronStatus,
