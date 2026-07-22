@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HoopMetrics &middot; CBA Core</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="bg-glow"></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">&#127936;</span>
+      <div>
+        <div class="brand-title">HoopMetrics</div>
+        <div class="brand-subtitle">CBA Core Engine</div>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-tab="player" role="tab" aria-selected="true">Player Evaluator</button>
+      <button class="tab" data-tab="trade" role="tab" aria-selected="false">Trade Checker</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- PLAYER EVALUATOR -->
+    <section id="panel-player" class="panel active">
+      <div class="grid">
+        <form id="player-form" class="card form-card">
+          <h2>Evaluate a Player</h2>
+          <p class="hint">Simulated RAPM + EPM blended into a modeled dollar value, adjusted for age, injury risk, archetype scarcity, and workload.</p>
+
+          <div class="field-row">
+            <label>Name
+              <input type="text" name="name" value="Jordan Example" />
+            </label>
+            <label>Age
+              <input type="number" name="age" value="26" min="1" required />
+            </label>
+          </div>
+
+          <div class="field-row">
+            <label>Archetype
+              <select name="archetype">
+                {% for a in archetypes %}
+                <option value="{{ a }}" {% if a == 'Unknown' %}selected{% endif %}>{{ a }}</option>
+                {% endfor %}
+              </select>
+            </label>
+            <label>Minutes / Game
+              <input type="number" name="minutes_per_game" value="32" min="1" max="48" step="0.5" required />
+            </label>
+          </div>
+
+          <div class="field-row three">
+            <label>Box +/-
+              <input type="number" name="box_plus_minus" value="3.0" step="0.1" required />
+            </label>
+            <label>On/Off
+              <input type="number" name="on_off" value="3.0" step="0.1" required />
+            </label>
+            <label>EPM
+              <input type="number" name="epm" value="3.0" step="0.1" required />
+            </label>
+          </div>
+
+          <label class="block">Games Played (last 3 seasons, comma-separated)
+            <input type="text" name="games_played_last_3" value="82, 82, 82" required />
+          </label>
+
+          <label class="block">Cap Hit ($)
+            <input type="number" name="cap_hit" value="10000000" min="0" step="1000" required />
+          </label>
+
+          <button type="submit" class="btn-primary">
+            <span>Evaluate Player</span>
+          </button>
+          <div class="error-box" id="player-error"></div>
+        </form>
+
+        <div class="card result-card" id="player-result">
+          <div class="empty-state">
+            <div class="empty-icon">&#128202;</div>
+            <p>Run an evaluation to see the breakdown here.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TRADE CHECKER -->
+    <section id="panel-trade" class="panel">
+      <div class="grid">
+        <form id="trade-form" class="card form-card">
+          <h2>Check a Trade</h2>
+          <p class="hint">Validates aggregation limits, apron-aware salary matching, and cash-in-trade rules for both sides.</p>
+
+          <div class="team-columns">
+            <div class="team-col">
+              <h3>Team A</h3>
+              <label>Apron Status
+                <select name="team_a_apron">
+                  {% for s in apron_statuses %}<option value="{{ s }}">{{ s }}</option>{% endfor %}
+                </select>
+              </label>
+              <label class="block">Outgoing salaries ($, comma-separated)
+                <input type="text" name="team_a_salaries" value="20000000" required />
+              </label>
+              <label class="block">Cash sent ($)
+                <input type="number" name="team_a_cash" value="0" min="0" step="1000" />
+              </label>
+            </div>
+
+            <div class="swap-icon">&#8646;</div>
+
+            <div class="team-col">
+              <h3>Team B</h3>
+              <label>Apron Status
+                <select name="team_b_apron">
+                  {% for s in apron_statuses %}<option value="{{ s }}">{{ s }}</option>{% endfor %}
+                </select>
+              </label>
+              <label class="block">Outgoing salaries ($, comma-separated)
+                <input type="text" name="team_b_salaries" value="25000000" required />
+              </label>
+              <label class="block">Cash sent ($)
+                <input type="number" name="team_b_cash" value="0" min="0" step="1000" />
+              </label>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-primary">
+            <span>Check Trade Legality</span>
+          </button>
+          <div class="error-box" id="trade-error"></div>
+        </form>
+
+        <div class="card result-card" id="trade-result">
+          <div class="empty-state">
+            <div class="empty-icon">&#9878;&#65039;</div>
+            <p>Run a check to see the verdict here.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>HoopMetrics CBA Core &mdash; modeled values, not official league figures.</span>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

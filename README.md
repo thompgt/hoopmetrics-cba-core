@@ -6,9 +6,30 @@ simulated on-court impact/analytics model with a rules engine for salary caps, t
 and trade-matching restrictions, then exposes both through a single gateway module so a
 proposed trade can be evaluated end-to-end: "is this trade good value, and is it even legal?"
 
-There is no external framework, database, or API server here — it's a collection of
-composable calculation modules plus a small integration layer (`engine_gateway.py`) and a
-pytest suite that exercises them individually and together.
+The core is a collection of composable calculation modules plus a small integration layer
+(`engine_gateway.py`) and a pytest suite that exercises them individually and together, with
+no external framework or database dependency. A `webapp/` package on top provides an optional
+FastAPI dashboard for interactively driving the engine — see [Web Dashboard](#web-dashboard).
+
+## Web Dashboard
+
+`webapp/` is a thin FastAPI + vanilla-JS front end over the library above. It never
+re-implements CBA math itself — every number displayed comes straight from `engine_gateway.py`
+and the modules it wraps, so the dashboard can't drift out of sync with the engine.
+
+```bash
+pip install -r requirements.txt
+python -m uvicorn webapp.main:app --reload
+```
+
+Then open http://127.0.0.1:8000 for two tools:
+
+- **Player Evaluator** — enter a player's age, archetype, box plus-minus/on-off/EPM, games
+  played, minutes per game, and cap hit; see the full valuation breakdown (RAPM, parsed EPM,
+  net impact, each risk multiplier, and the final modeled surplus value over cap hit).
+- **Trade Checker** — pick each team's apron status, outgoing salaries, and any cash sent; see
+  a pass/fail verdict plus the specific rule (aggregation, apron-aware salary matching, or
+  cash-in-trade limits) that blocked it, if any.
 
 ## Architecture
 
