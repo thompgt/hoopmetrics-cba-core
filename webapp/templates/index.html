@@ -20,6 +20,10 @@
     <nav class="tabs" role="tablist">
       <button class="tab active" data-tab="player" role="tab" aria-selected="true">Player Evaluator</button>
       <button class="tab" data-tab="trade" role="tab" aria-selected="false">Trade Checker</button>
+      <button class="tab" data-tab="tax" role="tab" aria-selected="false">Luxury Tax</button>
+      <button class="tab" data-tab="bird" role="tab" aria-selected="false">Bird Rights</button>
+      <button class="tab" data-tab="contract" role="tab" aria-selected="false">Contract Value</button>
+      <button class="tab" data-tab="stepien" role="tab" aria-selected="false">Stepien Rule</button>
     </nav>
   </header>
 
@@ -138,6 +142,129 @@
         <div class="card result-card" id="trade-result">
           <div class="empty-state">
             <div class="empty-icon">&#9878;&#65039;</div>
+            <p>Run a check to see the verdict here.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LUXURY TAX -->
+    <section id="panel-tax" class="panel">
+      <div class="grid">
+        <form id="tax-form" class="card form-card">
+          <h2>Luxury Tax Calculator</h2>
+          <p class="hint">Progressive $5M brackets above the tax line, doubled up for repeater offenders (taxpaying in 3 of the last 4 seasons).</p>
+
+          <label class="block">Team Payroll ($)
+            <input type="number" name="team_payroll" value="185000000" min="0" step="1000" required />
+          </label>
+          <label class="block">Tax Line ($)
+            <input type="number" name="tax_line" value="170000000" min="0" step="1000" required />
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" name="is_repeater" />
+            <span>Repeater taxpayer (3 of last 4 seasons)</span>
+          </label>
+
+          <button type="submit" class="btn-primary"><span>Calculate Tax Bill</span></button>
+          <div class="error-box" id="tax-error"></div>
+        </form>
+
+        <div class="card result-card" id="tax-result">
+          <div class="empty-state">
+            <div class="empty-icon">&#128176;</div>
+            <p>Run a calculation to see the tax bill here.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BIRD RIGHTS -->
+    <section id="panel-bird" class="panel">
+      <div class="grid">
+        <form id="bird-form" class="card form-card">
+          <h2>Bird Rights Re-Signing</h2>
+          <p class="hint">Consecutive seasons with the same team determine how far above the cap that team can go to re-sign their own free agent.</p>
+
+          <label class="block">Consecutive Seasons With Team
+            <input type="number" name="consecutive_seasons_with_team" value="3" min="0" step="1" required />
+          </label>
+          <label class="block">Prior Salary ($)
+            <input type="number" name="prior_salary" value="15000000" min="0" step="1000" required />
+          </label>
+
+          <button type="submit" class="btn-primary"><span>Classify &amp; Calculate Cap</span></button>
+          <div class="error-box" id="bird-error"></div>
+        </form>
+
+        <div class="card result-card" id="bird-result">
+          <div class="empty-state">
+            <div class="empty-icon">&#128038;</div>
+            <p>Run a check to see the re-signing cap here.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTRACT VALUE -->
+    <section id="panel-contract" class="panel">
+      <div class="grid">
+        <form id="contract-form" class="card form-card">
+          <h2>Contract Value Over Time</h2>
+          <p class="hint">A per-year surplus or deficit compounds across every remaining year of a multi-year deal &mdash; this shows the full tradable value of the contract.</p>
+
+          <label class="block">Modeled Value ($ / year)
+            <input type="number" name="modeled_value_dollars" value="25000000" step="1000" required />
+          </label>
+          <label class="block">Cap Hit ($ / year)
+            <input type="number" name="cap_hit_dollars" value="18000000" min="0" step="1000" required />
+          </label>
+          <label class="block">Years Remaining
+            <input type="number" name="years_remaining" value="3" min="1" step="1" required />
+          </label>
+
+          <button type="submit" class="btn-primary"><span>Compute Contract Value</span></button>
+          <div class="error-box" id="contract-error"></div>
+        </form>
+
+        <div class="card result-card" id="contract-result">
+          <div class="empty-state">
+            <div class="empty-icon">&#128196;</div>
+            <p>Run a calculation to see contract value here.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEPIEN RULE -->
+    <section id="panel-stepien" class="panel">
+      <div class="grid">
+        <form id="stepien-form" class="card form-card">
+          <h2>Stepien Rule Check</h2>
+          <p class="hint">A team may never end up with no first-round pick in two consecutive drafts. Check whether trading a given year's pick is legal.</p>
+
+          <label class="block">Draft Year To Trade
+            <input type="number" name="year" value="2027" step="1" required />
+          </label>
+          <div class="field-row three">
+            <label>Picks Owned That Year
+              <input type="number" name="picks_owned_this_year" value="1" min="0" step="1" required />
+            </label>
+            <label>Picks Owned Prior Year
+              <input type="number" name="picks_owned_prior_year" value="1" min="0" step="1" required />
+            </label>
+            <label>Picks Owned Next Year
+              <input type="number" name="picks_owned_next_year" value="1" min="0" step="1" required />
+            </label>
+          </div>
+
+          <button type="submit" class="btn-primary"><span>Check Legality</span></button>
+          <div class="error-box" id="stepien-error"></div>
+        </form>
+
+        <div class="card result-card" id="stepien-result">
+          <div class="empty-state">
+            <div class="empty-icon">&#127919;</div>
             <p>Run a check to see the verdict here.</p>
           </div>
         </div>

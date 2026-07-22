@@ -26,8 +26,11 @@ from analytics.age_curves import get_age_multiplier
 from analytics.injury_risk import get_injury_discount_factor
 from analytics.scarcity_curves import get_archetype_multiplier, _ARCHETYPE_MULTIPLIERS
 from cba.apron_matrix import ApronStatus
+from cba.luxury_tax import compute_luxury_tax_bill
+from cba.bird_rights import classify_bird_rights, get_re_signing_salary_cap
+from cba.asset_efficiency import compute_contract_efficiency, compute_total_contract_value
 from transactions.matcher import get_max_incoming_salary
-from transactions.equity_balancer import EquityBalancer
+from transactions.equity_balancer import EquityBalancer, StepienRuleViolation
 
 BASE_DIR = Path(__file__).resolve().parent
 app = FastAPI(title="HoopMetrics CBA Core")
@@ -62,6 +65,30 @@ class TradeInput(BaseModel):
     team_b_players: list[TradeSidePlayer]
     team_a_cash: float = 0.0
     team_b_cash: float = 0.0
+
+
+class LuxuryTaxInput(BaseModel):
+    team_payroll: float
+    tax_line: float
+    is_repeater: bool = False
+
+
+class BirdRightsInput(BaseModel):
+    consecutive_seasons_with_team: int
+    prior_salary: float
+
+
+class ContractEfficiencyInput(BaseModel):
+    modeled_value_dollars: float
+    cap_hit_dollars: float
+    years_remaining: int = 1
+
+
+class StepienRuleInput(BaseModel):
+    year: int
+    picks_owned_this_year: int
+    picks_owned_prior_year: int
+    picks_owned_next_year: int
 
 
 def _apron_from_value(value: str) -> ApronStatus:
@@ -176,3 +203,67 @@ async def trade_evaluate(payload: TradeInput):
         "team_a_max_incoming": get_max_incoming_salary(team_a_outgoing, team_a_apron),
         "team_b_max_incoming": get_max_incoming_salary(team_b_outgoing, team_b_apron),
     }
+
+
+@app.post("/api/luxury-tax/evaluate")
+async def luxury_tax_evaluate(payload: LuxuryTaxInput):
+    try:
+        bill = compute_luxury_tax_bill(payload.team_payroll, payload.tax_line, payload.is_repeater)
+    except ValueError as e:
+        return {"error": str(e)}
+    return {
+        "team_payroll": payload.team_payroll,
+        "tax_line": payload.tax_line,
+        "amount_over_line": max(0.0, payload.team_payroll - payload.tax_line),
+        "is_repeater": payload.is_repeater,
+        "tax_bill": bill,
+    }
+
+
+@app.post("/api/bird-rights/evaluate")
+async def bird_rights_evaluate(payload: BirdRightsInput):
+    try:
+        status = classify_bird_rights(payload.consecutive_seasons_with_team)
+        cap = get_re_signing_salary_cap(payload.prior_salary, status)
+    except ValueError as e:
+        return {"error": str(e)}
+    return {
+        "status": status.value,
+        "prior_salary": payload.prior_salary,
+        "re_signing_cap": cap,
+        "uncapped": cap is None,
+    }
+
+
+@app.post("/api/contract-efficiency/evaluate")
+async def contract_efficiency_evaluate(payload: ContractEfficiencyInput):
+    try:
+        per_year = compute_contract_efficiency(payload.modeled_value_dollars, payload.cap_hit_dollars)
+        total = compute_total_contract_value(
+            payload.modeled_value_dollars, payload.cap_hit_dollars, payload.years_remaining
+        )
+    except ValueError as e:
+        return {"error": str(e)}
+    return {
+        "per_year_efficiency": per_year,
+        "years_remaining": payload.years_remaining,
+        "total_contract_value": total,
+        "is_bargain": total >= 0,
+    }
+
+
+@app.post("/api/stepien-rule/evaluate")
+async def stepien_rule_evaluate(payload: StepienRuleInput):
+    picks_owned = {
+        payload.year: payload.picks_owned_this_year,
+        payload.year - 1: payload.picks_owned_prior_year,
+        payload.year + 1: payload.picks_owned_next_year,
+    }
+    balancer = EquityBalancer()
+    try:
+        balancer.add_first_round_pick_for_year(payload.year, picks_owned)
+    except StepienRuleViolation as e:
+        return {"legal": False, "reason": str(e)}
+    except ValueError as e:
+        return {"legal": False, "reason": str(e), "unowned": True}
+    return {"legal": True, "reason": f"Trading the {payload.year} first-round pick is permitted under the Stepien Rule."}

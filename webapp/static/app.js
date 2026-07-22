@@ -198,3 +198,140 @@ function escapeHtml(str) {
   div.textContent = str;
   return div.innerHTML;
 }
+
+async function submitJson(url, payload) {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return res.json();
+}
+
+function wireSimpleForm({ formId, errorId, resultId, buildPayload, endpoint, render }) {
+  const form = document.getElementById(formId);
+  const errorBox = document.getElementById(errorId);
+  const result = document.getElementById(resultId);
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    errorBox.classList.remove("show");
+    const fd = new FormData(form);
+    const btn = form.querySelector("button");
+    btn.disabled = true;
+    try {
+      const data = await submitJson(endpoint, buildPayload(fd));
+      if (data.error) {
+        errorBox.textContent = data.error;
+        errorBox.classList.add("show");
+        return;
+      }
+      render(result, data);
+    } catch (err) {
+      errorBox.textContent = "Something went wrong reaching the engine.";
+      errorBox.classList.add("show");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+}
+
+// --- Luxury Tax ---
+wireSimpleForm({
+  formId: "tax-form",
+  errorId: "tax-error",
+  resultId: "tax-result",
+  endpoint: "/api/luxury-tax/evaluate",
+  buildPayload: (fd) => ({
+    team_payroll: Number(fd.get("team_payroll")),
+    tax_line: Number(fd.get("tax_line")),
+    is_repeater: fd.get("is_repeater") === "on",
+  }),
+  render: (el, data) => {
+    el.innerHTML = `
+      <div class="headline-label">Estimated Tax Bill</div>
+      <div class="headline-value ${data.tax_bill > 0 ? "negative" : "positive"}" id="tax-value-el"></div>
+      <div class="metric-list">
+        ${metricRow("Team Payroll", money(data.team_payroll))}
+        ${metricRow("Tax Line", money(data.tax_line))}
+        ${metricRow("Amount Over Line", money(data.amount_over_line))}
+        ${metricRow("Repeater Taxpayer", data.is_repeater ? "Yes" : "No")}
+      </div>
+    `;
+    animateCount(document.getElementById("tax-value-el"), data.tax_bill, true);
+  },
+});
+
+// --- Bird Rights ---
+wireSimpleForm({
+  formId: "bird-form",
+  errorId: "bird-error",
+  resultId: "bird-result",
+  endpoint: "/api/bird-rights/evaluate",
+  buildPayload: (fd) => ({
+    consecutive_seasons_with_team: Number(fd.get("consecutive_seasons_with_team")),
+    prior_salary: Number(fd.get("prior_salary")),
+  }),
+  render: (el, data) => {
+    el.innerHTML = `
+      <div class="verdict-banner good">&#128038; ${data.status}</div>
+      <div class="headline-label">Max Re-Signing Offer</div>
+      <div class="headline-value positive" id="bird-value-el">${data.uncapped ? "Bounded only by max-salary bracket" : ""}</div>
+      <div class="metric-list">
+        ${metricRow("Prior Salary", money(data.prior_salary))}
+        ${metricRow("Status", data.status)}
+      </div>
+    `;
+    if (!data.uncapped) {
+      animateCount(document.getElementById("bird-value-el"), data.re_signing_cap, true);
+    }
+  },
+});
+
+// --- Contract Value ---
+wireSimpleForm({
+  formId: "contract-form",
+  errorId: "contract-error",
+  resultId: "contract-result",
+  endpoint: "/api/contract-efficiency/evaluate",
+  buildPayload: (fd) => ({
+    modeled_value_dollars: Number(fd.get("modeled_value_dollars")),
+    cap_hit_dollars: Number(fd.get("cap_hit_dollars")),
+    years_remaining: Number(fd.get("years_remaining")),
+  }),
+  render: (el, data) => {
+    el.innerHTML = `
+      <div class="verdict-banner ${data.is_bargain ? "good" : "bad"}">
+        ${data.is_bargain ? "&#128200; Team-friendly contract" : "&#128201; Overpriced contract"}
+      </div>
+      <div class="headline-label">Total Contract Value (over ${data.years_remaining} yr${data.years_remaining === 1 ? "" : "s"})</div>
+      <div class="headline-value ${data.total_contract_value >= 0 ? "positive" : "negative"}" id="contract-value-el"></div>
+      <div class="metric-list">
+        ${metricRow("Per-Year Efficiency", money(data.per_year_efficiency))}
+        ${metricRow("Years Remaining", data.years_remaining)}
+      </div>
+    `;
+    animateCount(document.getElementById("contract-value-el"), data.total_contract_value, true);
+  },
+});
+
+// --- Stepien Rule ---
+wireSimpleForm({
+  formId: "stepien-form",
+  errorId: "stepien-error",
+  resultId: "stepien-result",
+  endpoint: "/api/stepien-rule/evaluate",
+  buildPayload: (fd) => ({
+    year: Number(fd.get("year")),
+    picks_owned_this_year: Number(fd.get("picks_owned_this_year")),
+    picks_owned_prior_year: Number(fd.get("picks_owned_prior_year")),
+    picks_owned_next_year: Number(fd.get("picks_owned_next_year")),
+  }),
+  render: (el, data) => {
+    el.innerHTML = `
+      <div class="verdict-banner ${data.legal ? "good" : "bad"}">
+        ${data.legal ? "&#9989; Trade is legal" : "&#10060; Trade is blocked"}
+      </div>
+      <ul class="reason-list"><li>${escapeHtml(data.reason)}</li></ul>
+    `;
+  },
+});
