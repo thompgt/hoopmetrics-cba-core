@@ -29,8 +29,11 @@ from cba.apron_matrix import ApronStatus
 from cba.luxury_tax import compute_luxury_tax_bill
 from cba.bird_rights import classify_bird_rights, get_re_signing_salary_cap
 from cba.asset_efficiency import compute_contract_efficiency, compute_total_contract_value
+from cba.salary_caps import calculate_max_salary
 from transactions.matcher import get_max_incoming_salary
 from transactions.equity_balancer import EquityBalancer, StepienRuleViolation
+from .data.players import PLAYERS, CAP_FIGURES
+from .box_score_model import estimate_box_plus_minus, estimate_on_off, estimate_epm, classify_archetype_from_stats
 
 BASE_DIR = Path(__file__).resolve().parent
 app = FastAPI(title="HoopMetrics CBA Core")
@@ -89,6 +92,12 @@ class StepienRuleInput(BaseModel):
     picks_owned_this_year: int
     picks_owned_prior_year: int
     picks_owned_next_year: int
+
+
+class PlayerLookupInput(BaseModel):
+    name: str
+    season: str
+    cap_space: float
 
 
 def _apron_from_value(value: str) -> ApronStatus:
@@ -267,3 +276,82 @@ async def stepien_rule_evaluate(payload: StepienRuleInput):
     except ValueError as e:
         return {"legal": False, "reason": str(e), "unowned": True}
     return {"legal": True, "reason": f"Trading the {payload.year} first-round pick is permitted under the Stepien Rule."}
+
+
+@app.get("/api/players")
+async def list_players():
+    """Name -> list of seasons on file, used to drive the autofill/season dropdown."""
+    return {name: sorted(seasons.keys()) for name, seasons in PLAYERS.items()}
+
+
+@app.get("/api/cap-figures")
+async def cap_figures():
+    return CAP_FIGURES
+
+
+@app.post("/api/player/evaluate-by-name")
+async def player_evaluate_by_name(payload: PlayerLookupInput):
+    seasons = PLAYERS.get(payload.name)
+    if not seasons:
+        return {"error": f"No data on file for {payload.name!r}."}
+    record = seasons.get(payload.season)
+    if not record:
+        return {"error": f"No {payload.season} data on file for {payload.name!r}."}
+
+    bpm = estimate_box_plus_minus(record["pts"], record["reb"], record["ast"], record["stl"], record["blk"])
+    on_off = estimate_on_off(bpm)
+    epm = estimate_epm(bpm, record["ast"])
+    archetype = classify_archetype_from_stats(record["pts"], record["reb"], record["ast"], record["stl"], record["blk"])
+
+    try:
+        cap_hit = calculate_max_salary(payload.cap_space, record["years_of_service"], record["all_nba_honors"])
+    except ValueError as e:
+        return {"error": str(e)}
+
+    try:
+        player = Player(
+            payload.name, record["age"], archetype,
+            [record["games_played"]] * 3,
+            bpm, on_off, epm, cap_hit,
+            minutes_per_game=record["minutes_per_game"],
+        )
+    except ValueError as e:
+        return {"error": str(e)}
+
+    net_impact = calculate_net_impact_per_100(calculate_simulated_rapm(bpm, on_off), parse_epm(epm))
+    age_mult = get_age_multiplier(player.age)
+    injury_discount = get_injury_discount_factor(player.games_played_last_3)
+    archetype_mult = get_archetype_multiplier(archetype)
+    base_value = net_impact * 5_000_000
+    composite_mult = age_mult * injury_discount * archetype_mult
+    risk_adjusted = _apply_risk_adjustment(base_value, composite_mult)
+    workload_mult = player.minutes_per_game / 32.0
+    final_value = evaluate_player(player)
+
+    return {
+        "name": payload.name,
+        "season": payload.season,
+        "team": record["team"],
+        "archetype": archetype,
+        "stat_line": {
+            "PTS": record["pts"], "REB": record["reb"], "AST": record["ast"],
+            "STL": record["stl"], "BLK": record["blk"],
+            "GP": record["games_played"], "MIN": record["minutes_per_game"],
+        },
+        "derived_inputs": {"box_plus_minus": bpm, "on_off": on_off, "epm": epm},
+        "years_of_service": record["years_of_service"],
+        "all_nba_honors": record["all_nba_honors"],
+        "cap_hit": cap_hit,
+        "rapm": calculate_simulated_rapm(bpm, on_off),
+        "epm": epm,
+        "net_impact_per_100": net_impact,
+        "base_value": base_value,
+        "age_multiplier": age_mult,
+        "injury_discount": injury_discount,
+        "archetype_multiplier": archetype_mult,
+        "composite_multiplier": composite_mult,
+        "risk_adjusted_value": risk_adjusted,
+        "workload_multiplier": workload_mult,
+        "final_value": final_value,
+        "surplus_value": final_value - cap_hit,
+    }

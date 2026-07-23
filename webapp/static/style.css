@@ -283,6 +283,28 @@ input:focus, select:focus {
   padding: 0.6rem 0.8rem;
 }
 
+.archetype-badge {
+  display: inline-block;
+  color: var(--accent-2);
+  font-weight: 700;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(56px, 1fr));
+  gap: 0.6rem;
+  margin-bottom: 1.25rem;
+}
+.stat-chip {
+  background: #0e111a;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.55rem 0.3rem;
+  text-align: center;
+}
+.stat-chip-value { font-weight: 800; font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+.stat-chip-label { font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.15rem; }
+
 .stat-pair { display: flex; gap: 1rem; margin-bottom: 1.25rem; }
 .stat-box {
   flex: 1;
