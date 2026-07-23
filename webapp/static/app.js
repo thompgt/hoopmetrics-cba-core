@@ -41,27 +41,63 @@ function multiplierBar(value, center = 1.0, span = 0.5) {
 const playerForm = document.getElementById("player-form");
 const playerError = document.getElementById("player-error");
 const playerResult = document.getElementById("player-result");
+const nameInput = playerForm.querySelector('input[name="name"]');
+const seasonSelect = playerForm.querySelector('select[name="season"]');
+const capSelect = playerForm.querySelector('select[name="cap_space"]');
+
+let PLAYER_DB = {};
+
+async function loadPlayerMeta() {
+  const [players, caps] = await Promise.all([
+    fetch("/api/players").then((r) => r.json()),
+    fetch("/api/cap-figures").then((r) => r.json()),
+  ]);
+  PLAYER_DB = players;
+
+  document.getElementById("player-names").innerHTML = Object.keys(PLAYER_DB)
+    .map((n) => `<option value="${n}"></option>`).join("");
+
+  capSelect.innerHTML = Object.entries(caps)
+    .map(([season, amount]) => `<option value="${amount}">${season} cap ($${(amount / 1_000_000).toFixed(1)}M)</option>`)
+    .join("");
+
+  refreshSeasonOptions();
+}
+
+function refreshSeasonOptions() {
+  const seasons = PLAYER_DB[nameInput.value];
+  if (!seasons) {
+    seasonSelect.innerHTML = `<option value="">Pick a player first&hellip;</option>`;
+    seasonSelect.disabled = true;
+    return;
+  }
+  seasonSelect.innerHTML = seasons.map((s) => `<option value="${s}">${s}</option>`).join("");
+  seasonSelect.disabled = false;
+}
+
+nameInput.addEventListener("input", refreshSeasonOptions);
+loadPlayerMeta();
 
 playerForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   playerError.classList.remove("show");
-  const fd = new FormData(playerForm);
+
+  if (!PLAYER_DB[nameInput.value]) {
+    playerError.textContent = `No data on file for "${nameInput.value}" — pick a name from the suggestions.`;
+    playerError.classList.add("show");
+    return;
+  }
+
   const payload = {
-    name: fd.get("name") || "Player",
-    age: Number(fd.get("age")),
-    archetype: fd.get("archetype"),
-    games_played_last_3: parseNumberList(fd.get("games_played_last_3")),
-    box_plus_minus: Number(fd.get("box_plus_minus")),
-    on_off: Number(fd.get("on_off")),
-    epm: Number(fd.get("epm")),
-    cap_hit: Number(fd.get("cap_hit")),
-    minutes_per_game: Number(fd.get("minutes_per_game")),
+    name: nameInput.value,
+    season: seasonSelect.value,
+    cap_space: Number(capSelect.value),
   };
 
   const btn = playerForm.querySelector("button");
   btn.disabled = true;
   try {
-    const res = await fetch("/api/player/evaluate", {
+    const res = await fetch("/api/player/evaluate-by-name", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -84,14 +120,26 @@ playerForm.addEventListener("submit", async (e) => {
 function renderPlayerResult(data) {
   const positive = data.final_value >= 0;
   const surplusPositive = data.surplus_value >= 0;
+  const s = data.stat_line;
 
   playerResult.innerHTML = `
-    <div class="headline-label">Modeled Value &mdash; ${data.name}</div>
+    <div class="headline-label">${data.season} &mdash; ${data.team} &middot; <span class="archetype-badge">${data.archetype}</span></div>
     <div class="headline-value ${positive ? "positive" : "negative"}" id="final-value-el"></div>
+    <div class="headline-label" style="margin-top:-1.1rem; margin-bottom:1.5rem;">Modeled Value &mdash; ${data.name}</div>
+
+    <div class="stat-grid">
+      ${statChip("PTS", s.PTS)}
+      ${statChip("REB", s.REB)}
+      ${statChip("AST", s.AST)}
+      ${statChip("STL", s.STL)}
+      ${statChip("BLK", s.BLK)}
+      ${statChip("GP", s.GP)}
+      ${statChip("MIN", s.MIN)}
+    </div>
 
     <div class="stat-pair">
       <div class="stat-box">
-        <div class="stat-label">Cap Hit</div>
+        <div class="stat-label">Cap Hit (derived)</div>
         <div class="stat-value">${money(data.cap_hit)}</div>
       </div>
       <div class="stat-box">
@@ -112,6 +160,10 @@ function renderPlayerResult(data) {
     </div>
   `;
   animateCount(document.getElementById("final-value-el"), data.final_value, true);
+}
+
+function statChip(label, value) {
+  return `<div class="stat-chip"><div class="stat-chip-value">${value}</div><div class="stat-chip-label">${label}</div></div>`;
 }
 
 function metricRow(name, value) {

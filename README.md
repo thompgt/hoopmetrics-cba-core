@@ -24,9 +24,13 @@ python -m uvicorn webapp.main:app --reload
 
 Then open http://127.0.0.1:8000 for two tools:
 
-- **Player Evaluator** — enter a player's age, archetype, box plus-minus/on-off/EPM, games
-  played, minutes per game, and cap hit; see the full valuation breakdown (RAPM, parsed EPM,
-  net impact, each risk multiplier, and the final modeled surplus value over cap hit).
+- **Player Evaluator** — pick a real player's name (autofill), a season, and a league
+  salary-cap figure; that season's real per-game stat line, derived archetype, and every
+  valuation input (box plus-minus, on/off, EPM, cap hit via `calculate_max_salary`) are
+  computed automatically by `webapp/box_score_model.py` from a small illustrative dataset
+  (`webapp/data/players.py`) — no manual stat entry required. See the full valuation
+  breakdown (RAPM, parsed EPM, net impact, each risk multiplier, and the final modeled
+  surplus value over cap hit).
 - **Trade Checker** — pick each team's apron status, outgoing salaries, and any cash sent; see
   a pass/fail verdict plus the specific rule (aggregation, apron-aware salary matching, or
   cash-in-trade limits) that blocked it, if any.

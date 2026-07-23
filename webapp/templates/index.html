@@ -33,49 +33,23 @@
       <div class="grid">
         <form id="player-form" class="card form-card">
           <h2>Evaluate a Player</h2>
-          <p class="hint">Simulated RAPM + EPM blended into a modeled dollar value, adjusted for age, injury risk, archetype scarcity, and workload.</p>
+          <p class="hint">Pick a name, season, and cap-space figure &mdash; stats, archetype, and every valuation input are derived automatically.</p>
+
+          <label class="block">Player Name
+            <input type="text" name="name" list="player-names" placeholder="Start typing a name&hellip;" autocomplete="off" required />
+            <datalist id="player-names"></datalist>
+          </label>
 
           <div class="field-row">
-            <label>Name
-              <input type="text" name="name" value="Jordan Example" />
-            </label>
-            <label>Age
-              <input type="number" name="age" value="26" min="1" required />
-            </label>
-          </div>
-
-          <div class="field-row">
-            <label>Archetype
-              <select name="archetype">
-                {% for a in archetypes %}
-                <option value="{{ a }}" {% if a == 'Unknown' %}selected{% endif %}>{{ a }}</option>
-                {% endfor %}
+            <label>Season
+              <select name="season" required disabled>
+                <option value="">Pick a player first&hellip;</option>
               </select>
             </label>
-            <label>Minutes / Game
-              <input type="number" name="minutes_per_game" value="32" min="1" max="48" step="0.5" required />
+            <label>Cap Space (league salary cap)
+              <select name="cap_space" required></select>
             </label>
           </div>
-
-          <div class="field-row three">
-            <label>Box +/-
-              <input type="number" name="box_plus_minus" value="3.0" step="0.1" required />
-            </label>
-            <label>On/Off
-              <input type="number" name="on_off" value="3.0" step="0.1" required />
-            </label>
-            <label>EPM
-              <input type="number" name="epm" value="3.0" step="0.1" required />
-            </label>
-          </div>
-
-          <label class="block">Games Played (last 3 seasons, comma-separated)
-            <input type="text" name="games_played_last_3" value="82, 82, 82" required />
-          </label>
-
-          <label class="block">Cap Hit ($)
-            <input type="number" name="cap_hit" value="10000000" min="0" step="1000" required />
-          </label>
 
           <button type="submit" class="btn-primary">
             <span>Evaluate Player</span>
